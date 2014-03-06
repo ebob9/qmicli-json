@@ -1,0 +1,18 @@
+libqmi is a glib-based library for talking to WWAN modems and devices which
+speak the Qualcomm MSM Interface (QMI) protocol.
+
+qmicli is the command-line tool for interacting with the QMI API.
+
+This project aims to re-write the output of qmicli to JSON-format, which makes output parsing simpler in Python and other higher-level languages. This is simpler for intermediate users (like me!) than using GIO or parsing formatted output.
+
+This code was forked from the libqmi 1.9.0 dev branch on 3/2/2014. 
+
+Changes from qmicli:   
+  * qmicli-json uses (and requires) Jansson 2.5 or higher - http://www.digip.org/jansson/
+  * All output should be human-readable JSON format by default (20% complete)
+  * All output now uses stdout, and errors return "success": false.
+  * Some 'count' values have been removed, these can be derived from array lengths for now.
+  * New command line option '-j' for compact mode (not as human-readable).
+
+License:
+  The qmicli tool is released under the GPLv2+ license.

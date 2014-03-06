@@ -1,0 +1,21 @@
+
+
+List of things left for later:
+----------------------------------------
+
+Short Term: 
+
+ * Finish conversion (qmicli.c 90%, qmicli-nas 50%, rest currently 0%).
+
+ * Fix/verify type casts (ex: G_GUINT16 to Jansson "i").
+
+ * Verify that vars are free'd correctly when used and no exit.
+
+Long Term:
+
+ * JSON imput support from stdin instead of switches.
+
+ * Change output structure from original qmicli to 'make more sense'.
+
+ * Make qmicli-json more of a direct QMI->JSON xlation layer.
+
