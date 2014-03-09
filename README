@@ -9,7 +9,7 @@ This code was forked from the libqmi 1.9.0 dev branch on 3/2/2014.
 
 Changes from qmicli:   
   * qmicli-json uses (and requires) Jansson 2.5 or higher - http://www.digip.org/jansson/
-  * All output should be human-readable JSON format by default (20% complete)
+  * All output should be human-readable JSON format by default (35% complete)
   * All output now uses stdout, and errors return "success": false.
   * Some 'count' values have been removed, these can be derived from array lengths for now.
   * New command line option '-j' for compact mode (not as human-readable).

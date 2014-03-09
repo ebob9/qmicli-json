@@ -5,13 +5,17 @@ List of things left for later:
 
 Short Term: 
 
- * Finish conversion (qmicli.c 90%, qmicli-nas 50%, rest currently 0%).
+ * Finish conversion (qmicli.c 98%, qmicli-nas 100%, rest currently 0%).
 
  * Fix/verify type casts (ex: G_GUINT16 to Jansson "i").
 
  * Verify that vars are free'd correctly when used and no exit.
 
+ * Write function to convert comma-seperated lists to JSON array.
+
 Long Term:
+
+ * Figure out how to handle async error/output situations.
 
  * JSON imput support from stdin instead of switches.
 

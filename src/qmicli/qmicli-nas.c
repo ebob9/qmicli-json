@@ -110,16 +110,16 @@ static GOptionEntry entries[] = {
 GOptionGroup *
 qmicli_nas_get_option_group (void)
 {
-	GOptionGroup *group;
+        GOptionGroup *group;
 
-	group = g_option_group_new ("nas",
-	                            "NAS options",
-	                            "Show Network Access Service options",
-	                            NULL,
-	                            NULL);
-	g_option_group_add_entries (group, entries);
+        group = g_option_group_new ("nas",
+                                    "NAS options",
+                                    "Show Network Access Service options",
+                                    NULL,
+                                    NULL);
+        g_option_group_add_entries (group, entries);
 
-	return group;
+        return group;
 }
 
 gboolean
@@ -145,7 +145,6 @@ qmicli_nas_options_enabled (void)
                  noop_flag);
 
     if (n_actions > 1) {
-        //g_printerr ("error: too many NAS actions requested\n");
         g_print ("%s\n", json_dumps(json_pack("{sbss}",
              "success", 0,
              "error", "too many NAS actions requested"
@@ -217,11 +216,10 @@ get_signal_info_ready (QmiClientNas *client,
 
     output = qmi_client_nas_get_signal_info_finish (client, res, &error);
     if (!output) {
-        //g_printerr ("error: operation failed: %s\n", error->message);
         g_print ("%s\n", json_dumps(json_pack("{sbssss}",
              "success", 0,
              "error", "operation failed",
-	     "message", error->message
+             "message", error->message
               ),json_print_flag));
         g_error_free (error);
         shutdown (FALSE);
@@ -229,7 +227,6 @@ get_signal_info_ready (QmiClientNas *client,
     }
 
     if (!qmi_message_nas_get_signal_info_output_get_result (output, &error)) {
-        //g_printerr ("error: couldn't get signal info: %s\n", error->message);
         g_print ("%s\n", json_dumps(json_pack("{sbssss}",
              "success", 0,
              "error", "couldn't get signal info",
@@ -243,7 +240,7 @@ get_signal_info_ready (QmiClientNas *client,
 
     json_output = json_pack("{sbss}",
              "success", 1,
-             "device", qmi_device_get_path_display (ctx->device) 
+             "device", qmi_device_get_path_display (ctx->device)
               );
 
     /* CDMA... */
@@ -253,7 +250,7 @@ get_signal_info_ready (QmiClientNas *client,
                                                                          NULL)) {
 
        json_object_update(json_output, json_pack("{s{sisf}}",
-	    "cdma",
+            "cdma",
                  "rssi", rssi,
                  "ecio", (-0.5)*((gdouble)ecio))
             );
@@ -268,10 +265,10 @@ get_signal_info_ready (QmiClientNas *client,
                                                                         NULL)) {
 
        json_object_update(json_output, json_pack("{s{sisfs{sisf}si}}",
-	    "hdr",
+            "hdr",
                  "rssi", rssi,
                  "ecio", (-0.5)*((gdouble)ecio),
-                 "sinr", 
+                 "sinr",
                         "level", sinr_level,
                         "db", get_db_from_sinr_level (sinr_level),
                  "io", io
@@ -327,8 +324,9 @@ get_signal_info_ready (QmiClientNas *client,
                  "rscp", rscp
             ));
     }
-    
+
     g_print ("%s\n", json_dumps(json_output,json_print_flag));
+    free(json_output);
 
     qmi_message_nas_get_signal_info_output_unref (output);
     shutdown (TRUE);
@@ -436,7 +434,7 @@ get_signal_strength_ready (QmiClientNas *client,
            json_array_append(json_object_get(json_output,"other"),json_pack("{si}",
                      qmi_nas_radio_interface_get_string (element->radio_interface),
                      element->strength
-           )); 
+           ));
 
         }
     }
@@ -448,7 +446,7 @@ get_signal_strength_ready (QmiClientNas *client,
         json_object_update(json_output, json_pack("{s{}}",
              "rssi"
              ));
- 
+
         for (i = 0; i < array->len; i++) {
             QmiMessageNasGetSignalStrengthOutputRssiListElement *element;
 
@@ -524,6 +522,7 @@ get_signal_strength_ready (QmiClientNas *client,
     /* Just skip others for now */
 
     g_print ("%s\n", json_dumps(json_output,json_print_flag));
+    free(json_output);
 
     qmi_message_nas_get_signal_strength_output_unref (output);
     shutdown (TRUE);
@@ -710,6 +709,7 @@ get_tx_rx_info_ready (QmiClientNas *client,
     }
 
     g_print ("%s\n", json_dumps(json_output,json_print_flag));
+    free(json_output);
 
     qmi_message_nas_get_tx_rx_info_output_unref (output);
     shutdown (TRUE);
@@ -779,8 +779,6 @@ get_home_network_ready (QmiClientNas *client,
         return;
     }
 
-    g_print ("[%s] Successfully got home network:\n",
-             qmi_device_get_path_display (ctx->device));
     json_output = json_pack("{sbss}",
              "success", 1,
              "device", qmi_device_get_path_display (ctx->device)
@@ -798,13 +796,6 @@ get_home_network_ready (QmiClientNas *client,
             &description,
             NULL);
 
-        g_print ("\tHome network:\n"
-                 "\t\tMCC: '%" G_GUINT16_FORMAT"'\n"
-                 "\t\tMNC: '%" G_GUINT16_FORMAT"'\n"
-                 "\t\tDescription: '%s'\n",
-                 mcc,
-                 mnc,
-                 description);
         json_object_update(json_output, json_pack("{s{sisiss}}",
                  "home network",
                                "mcc", mcc,
@@ -822,10 +813,6 @@ get_home_network_ready (QmiClientNas *client,
                 &sid,
                 &nid,
                 NULL)) {
-            g_print ("\t\tSID: '%" G_GUINT16_FORMAT"'\n"
-                     "\t\tNID: '%" G_GUINT16_FORMAT"'\n",
-                     sid,
-                     nid);
            json_object_update(json_object_get(json_output, "home network"), json_pack("{sisi}",
                      "sid", sid,
                      "nid", nid
@@ -845,11 +832,6 @@ get_home_network_ready (QmiClientNas *client,
                 NULL, /* description_encoding */
                 NULL, /* description */
                 NULL)) {
-            g_print ("\t3GPP2 Home network (extended):\n"
-                     "\t\tMCC: '%" G_GUINT16_FORMAT"'\n"
-                     "\t\tMNC: '%" G_GUINT16_FORMAT"'\n",
-                     mcc,
-                     mnc);
            json_object_update(json_output, json_pack("{s{sisisn}}",
                      "3gpp2 home network",
                                "mcc", mcc,
@@ -862,6 +844,7 @@ get_home_network_ready (QmiClientNas *client,
     }
 
     g_print ("%s\n", json_dumps(json_output,json_print_flag));
+    free(json_output);
 
     qmi_message_nas_get_home_network_output_unref (output);
     shutdown (TRUE);
@@ -899,8 +882,6 @@ get_serving_system_ready (QmiClientNas *client,
         return;
     }
 
-    g_print ("[%s] Successfully got serving system:\n",
-             qmi_device_get_path_display (ctx->device));
     json_output = json_pack("{sbss}",
              "success", 1,
              "device", qmi_device_get_path_display (ctx->device)
@@ -923,17 +904,7 @@ get_serving_system_ready (QmiClientNas *client,
             &radio_interfaces,
             NULL);
 
-        g_print ("\tRegistration state: '%s'\n"
-                 "\tCS: '%s'\n"
-                 "\tPS: '%s'\n"
-                 "\tSelected network: '%s'\n"
-                 "\tRadio interfaces: '%u'\n",
-                 qmi_nas_registration_state_get_string (registration_state),
-                 qmi_nas_attach_state_get_string (cs_attach_state),
-                 qmi_nas_attach_state_get_string (ps_attach_state),
-                 qmi_nas_network_type_get_string (selected_network),
-                 radio_interfaces->len);
-                 /* Seperate calls to maintain hashtable order 
+                 /* Seperate calls to maintain hashtable order
                  for human readability*/
         json_object_update(json_output, json_pack("{ss}",
                  "registration state", qmi_nas_registration_state_get_string (registration_state)
@@ -955,7 +926,6 @@ get_serving_system_ready (QmiClientNas *client,
             QmiNasRadioInterface iface;
 
             iface = g_array_index (radio_interfaces, QmiNasRadioInterface, i);
-            g_print ("\t\t[%u]: '%s'\n", i, qmi_nas_radio_interface_get_string (iface));
             json_array_append(json_object_get(json_output,"radio interfaces"),json_pack("s", qmi_nas_radio_interface_get_string (iface)));
         }
     }
@@ -967,8 +937,6 @@ get_serving_system_ready (QmiClientNas *client,
                 output,
                 &roaming,
                 NULL)) {
-            g_print ("\tRoaming status: '%s'\n",
-                     qmi_nas_roaming_indicator_status_get_string (roaming));
             json_object_update(json_output, json_pack("{ss}",
                  "roaming status", qmi_nas_roaming_indicator_status_get_string (roaming)
                  ));
@@ -984,8 +952,6 @@ get_serving_system_ready (QmiClientNas *client,
                 NULL)) {
             guint i;
 
-            g_print ("\tData service capabilities: '%u'\n",
-                     data_service_capability->len);
             json_object_update(json_output, json_pack("{s[]}",
                  "data service capabilites"
                  ));
@@ -994,7 +960,6 @@ get_serving_system_ready (QmiClientNas *client,
                 QmiNasDataCapability cap;
 
                 cap = g_array_index (data_service_capability, QmiNasDataCapability, i);
-                g_print ("\t\t[%u]: '%s'\n", i, qmi_nas_data_capability_get_string (cap));
                 json_array_append(json_object_get(json_output,"data service capabilites"),json_pack("s", qmi_nas_data_capability_get_string (cap)));
             }
         }
@@ -1011,18 +976,11 @@ get_serving_system_ready (QmiClientNas *client,
                 &current_plmn_mnc,
                 &current_plmn_description,
                 NULL)) {
-            g_print ("\tCurrent PLMN:\n"
-                     "\t\tMCC: '%" G_GUINT16_FORMAT"'\n"
-                     "\t\tMNC: '%" G_GUINT16_FORMAT"'\n"
-                     "\t\tDescription: '%s'\n",
-                     current_plmn_mcc,
-                     current_plmn_mnc,
-                     current_plmn_description);
             json_object_update(json_output, json_pack("{s{sisiss}}",
                  "current plmn",
                                 "mcc", current_plmn_mcc,
                                 "mnc", current_plmn_mnc,
-				"description", current_plmn_description
+                                "description", current_plmn_description
                  ));
         }
     }
@@ -1036,14 +994,10 @@ get_serving_system_ready (QmiClientNas *client,
                 &sid,
                 &nid,
                 NULL)) {
-            g_print ("\tCDMA System ID:\n"
-                     "\t\tSID: '%" G_GUINT16_FORMAT"'\n"
-                     "\t\tNID: '%" G_GUINT16_FORMAT"'\n",
-                     sid, nid);
-            json_object_update(json_object_get(json_output,"current plmn"),json_pack("{sisi}", 
-		"sid", sid,
-		"nid", nid		 
-		));            
+            json_object_update(json_object_get(json_output,"current plmn"),json_pack("{sisi}",
+                "sid", sid,
+                "nid", nid
+                ));
 
         }
     }
@@ -1066,16 +1020,11 @@ get_serving_system_ready (QmiClientNas *client,
             latitude_degrees = ((gdouble)latitude * 0.25)/3600.0;
             longitude_degrees = ((gdouble)longitude * 0.25)/3600.0;
 
-            g_print ("\tCDMA Base station info:\n"
-                     "\t\tBase station ID: '%" G_GUINT16_FORMAT"'\n"
-                     "\t\tLatitude: '%lf'º\n"
-                     "\t\tLongitude: '%lf'º\n",
-                     id, latitude_degrees, longitude_degrees);
             json_object_update(json_output, json_pack("{s{sisfsf}}",
                  "cdma base station info",
-			"base station id", id,
-			"latitude", latitude_degrees,
-			"longitude", longitude_degrees
+                        "base station id", id,
+                        "latitude", latitude_degrees,
+                        "longitude", longitude_degrees
                  ));
         }
     }
@@ -1089,8 +1038,6 @@ get_serving_system_ready (QmiClientNas *client,
                 NULL)) {
             guint i;
 
-            g_print ("\tRoaming indicators: '%u'\n",
-                     roaming_indicators->len);
             json_object_update(json_output, json_pack("{s{}}",
                  "roaming indicators"
                  ));
@@ -1099,13 +1046,9 @@ get_serving_system_ready (QmiClientNas *client,
                 QmiMessageNasGetServingSystemOutputRoamingIndicatorListElement *element;
 
                 element = &g_array_index (roaming_indicators, QmiMessageNasGetServingSystemOutputRoamingIndicatorListElement, i);
-                g_print ("\t\t[%u]: '%s' (%s)\n",
-                         i,
-                         qmi_nas_roaming_indicator_status_get_string (element->roaming_indicator),
-                         qmi_nas_radio_interface_get_string (element->radio_interface));
-                json_object_update(json_object_get(json_output,"roaming indicators"),json_pack("{ss}", 
-			qmi_nas_radio_interface_get_string (element->radio_interface), qmi_nas_roaming_indicator_status_get_string (element->roaming_indicator)
-			));            
+                json_object_update(json_object_get(json_output,"roaming indicators"),json_pack("{ss}",
+                        qmi_nas_radio_interface_get_string (element->radio_interface), qmi_nas_roaming_indicator_status_get_string (element->roaming_indicator)
+                        ));
 
             }
         }
@@ -1118,8 +1061,6 @@ get_serving_system_ready (QmiClientNas *client,
                 output,
                 &roaming,
                 NULL)) {
-            g_print ("\tDefault roaming status: '%s'\n",
-                     qmi_nas_roaming_indicator_status_get_string (roaming));
             json_object_update(json_output, json_pack("{ss}",
                  "default roaming status", qmi_nas_roaming_indicator_status_get_string (roaming)
                  ));
@@ -1137,18 +1078,11 @@ get_serving_system_ready (QmiClientNas *client,
                 &local_time_offset,
                 &daylight_saving_time,
                 NULL)) {
-            g_print ("\t3GPP2 time zone:\n"
-                     "\t\tLeap seconds: '%u' seconds\n"
-                     "\t\tLocal time offset: '%d' minutes\n"
-                     "\t\tDaylight saving time: '%s'\n",
-                     leap_seconds,
-                     (gint)local_time_offset * 30,
-                     daylight_saving_time ? "yes" : "no");
             json_object_update(json_output, json_pack("{s{sisisb}",
                  "3gpp2 time zone",
-				"leap seconds", leap_seconds,
-				"local time offset", (gint)local_time_offset * 30,
-				"daylight savings time", daylight_saving_time
+                                "leap seconds", leap_seconds,
+                                "local time offset", (gint)local_time_offset * 30,
+                                "daylight savings time", daylight_saving_time
                  ));
 
         }
@@ -1161,7 +1095,6 @@ get_serving_system_ready (QmiClientNas *client,
                 output,
                 &cdma_p_rev,
                 NULL)) {
-            g_print ("\tCDMA P_Rev: '%u'\n", cdma_p_rev);
             json_object_update(json_output, json_pack("{si}",
                  "cdma p_rev", cdma_p_rev
                  ));
@@ -1175,8 +1108,6 @@ get_serving_system_ready (QmiClientNas *client,
                 output,
                 &time_zone,
                 NULL)) {
-            g_print ("\t3GPP time zone offset: '%d' minutes\n",
-                     (gint)time_zone * 15);
             json_object_update(json_output, json_pack("{si}",
                  "3gpp time zone offset", (gint)time_zone * 15
                  ));
@@ -1190,8 +1121,6 @@ get_serving_system_ready (QmiClientNas *client,
                 output,
                 &adjustment,
                 NULL)) {
-            g_print ("\t3GPP daylight saving time adjustment: '%u' hours\n",
-                     adjustment);
             json_object_update(json_output, json_pack("{si}",
                  "3gpp daylight savings time adjustment", adjustment
                  ));
@@ -1205,7 +1134,6 @@ get_serving_system_ready (QmiClientNas *client,
                 output,
                 &lac,
                 NULL)) {
-            g_print ("\t3GPP location area code: '%" G_GUINT16_FORMAT"'\n", lac);
             json_object_update(json_output, json_pack("{si}",
                  "3gpp location area code", lac
                  ));
@@ -1219,7 +1147,6 @@ get_serving_system_ready (QmiClientNas *client,
                 output,
                 &cid,
                 NULL)) {
-            g_print ("\t3GPP cell ID: '%u'\n", cid);
             json_object_update(json_output, json_pack("{si}",
                  "3gpp cell id", cid
                  ));
@@ -1233,8 +1160,6 @@ get_serving_system_ready (QmiClientNas *client,
                 output,
                 &concurrent,
                 NULL)) {
-            g_print ("\t3GPP2 concurrent service info: '%s'\n",
-                     concurrent ? "available" : "not available");
             json_object_update(json_output, json_pack("{sb}",
                  "3gpp2 concurrent service info", concurrent
                  ));
@@ -1248,8 +1173,6 @@ get_serving_system_ready (QmiClientNas *client,
                 output,
                 &prl,
                 NULL)) {
-            g_print ("\t3GPP2 PRL indicator: '%s'\n",
-                     prl ? "system in PRL" : "system not in PRL");
             json_object_update(json_output, json_pack("{sb}",
                  "3gpp2 prl indicator", prl
                  ));
@@ -1263,8 +1186,6 @@ get_serving_system_ready (QmiClientNas *client,
                 output,
                 &supported,
                 NULL)) {
-            g_print ("\tDual transfer mode: '%s'\n",
-                     supported ? "supported" : "not supported");
             json_object_update(json_output, json_pack("{sb}",
                  "dual transfer mode", supported
                  ));
@@ -1286,24 +1207,13 @@ get_serving_system_ready (QmiClientNas *client,
                 &hdr_hybrid,
                 &forbidden,
                 NULL)) {
-            g_print ("\tDetailed status:\n"
-                     "\t\tStatus: '%s'\n"
-                     "\t\tCapability: '%s'\n"
-                     "\t\tHDR Status: '%s'\n"
-                     "\t\tHDR Hybrid: '%s'\n"
-                     "\t\tForbidden: '%s'\n",
-                     qmi_nas_service_status_get_string (status),
-                     qmi_nas_network_service_domain_get_string (capability),
-                     qmi_nas_service_status_get_string (hdr_status),
-                     hdr_hybrid ? "yes" : "no",
-                     forbidden ? "yes" : "no");
             json_object_update(json_output, json_pack("{s{sssssssbsb}}",
                  "detailed status",
-				"status", qmi_nas_service_status_get_string (status),
-				"capability", qmi_nas_network_service_domain_get_string (capability),
-				"hdr status", qmi_nas_service_status_get_string (hdr_status),
-				"hdr hybrid", hdr_hybrid,
-				"forbidden", forbidden
+                                "status", qmi_nas_service_status_get_string (status),
+                                "capability", qmi_nas_network_service_domain_get_string (capability),
+                                "hdr status", qmi_nas_service_status_get_string (hdr_status),
+                                "hdr hybrid", hdr_hybrid,
+                                "forbidden", forbidden
                  ));
         }
     }
@@ -1317,15 +1227,10 @@ get_serving_system_ready (QmiClientNas *client,
                 &mcc,
                 &imsi_11_12,
                 NULL)) {
-            g_print ("\tCDMA system info:\n"
-                     "\t\tMCC: '%" G_GUINT16_FORMAT"'\n"
-                     "\t\tIMSI_11_12: '%u'\n",
-                     mcc,
-                     imsi_11_12);
             json_object_update(json_output, json_pack("{s{sisi}}",
                  "cdma system info",
-				"mcc", mcc,
-				"imsi_11_12", imsi_11_12
+                                "mcc", mcc,
+                                "imsi_11_12", imsi_11_12
                  ));
         }
     }
@@ -1337,8 +1242,6 @@ get_serving_system_ready (QmiClientNas *client,
                 output,
                 &personality,
                 NULL)) {
-            g_print ("\tHDR personality: '%s'\n",
-                     qmi_nas_hdr_personality_get_string (personality));
             json_object_update(json_output, json_pack("{ss}",
                  "hdr personality", qmi_nas_hdr_personality_get_string (personality)
                  ));
@@ -1352,7 +1255,6 @@ get_serving_system_ready (QmiClientNas *client,
                 output,
                 &tac,
                 NULL)) {
-            g_print ("\tLTE tracking area code: '%" G_GUINT16_FORMAT"'\n", tac);
             json_object_update(json_output, json_pack("{si}",
                  "lte tracking area code", tac
                  ));
@@ -1368,15 +1270,10 @@ get_serving_system_ready (QmiClientNas *client,
                 &cs_status,
                 &ps_status,
                 NULL)) {
-            g_print ("\tCall barring status:\n"
-                     "\t\tCircuit switched: '%s'\n"
-                     "\t\tPacket switched: '%s'\n",
-                     qmi_nas_call_barring_status_get_string (cs_status),
-                     qmi_nas_call_barring_status_get_string (ps_status));
             json_object_update(json_output, json_pack("{s{ssss}}",
                  "call barring status",
-				"circuit switched", qmi_nas_call_barring_status_get_string (cs_status),
-				"packet switched", qmi_nas_call_barring_status_get_string (ps_status)
+                                "circuit switched", qmi_nas_call_barring_status_get_string (cs_status),
+                                "packet switched", qmi_nas_call_barring_status_get_string (ps_status)
                  ));
         }
     }
@@ -1388,7 +1285,6 @@ get_serving_system_ready (QmiClientNas *client,
                 output,
                 &code,
                 NULL)) {
-            g_print ("\tUMTS primary scrambling code: '%" G_GUINT16_FORMAT"'\n", code);
             json_object_update(json_output, json_pack("{si}",
                  "utms primary scrambling code", code
                  ));
@@ -1406,25 +1302,18 @@ get_serving_system_ready (QmiClientNas *client,
                 &mnc,
                 &has_pcs_digit,
                 NULL)) {
-            g_print ("\tFull operator code info:\n"
-                     "\t\tMCC: '%" G_GUINT16_FORMAT"'\n"
-                     "\t\tMNC: '%" G_GUINT16_FORMAT"'\n"
-                     "\t\tMNC with PCS digit: '%s'\n",
-                     mcc,
-                     mnc,
-                     has_pcs_digit ? "yes" : "no");
             json_object_update(json_output, json_pack("{s{sisisb}}",
                  "full operator code info",
-				"mcc", mcc,
-				"mnc", mnc,
-				"mnc with pcs digit", has_pcs_digit
+                                "mcc", mcc,
+                                "mnc", mnc,
+                                "mnc with pcs digit", has_pcs_digit
                  ));
         }
     }
 
     g_print ("%s\n", json_dumps(json_output, json_print_flag));
-
     free(json_output);
+
     qmi_message_nas_get_serving_system_output_unref (output);
     shutdown (TRUE);
 }
@@ -1439,7 +1328,6 @@ get_system_info_ready (QmiClientNas *client,
 
     output = qmi_client_nas_get_system_info_finish (client, res, &error);
     if (!output) {
-        g_printerr ("error: operation failed: %s\n", error->message);
         g_print ("%s\n", json_dumps(json_pack("{sbssss}",
              "success", 0,
              "error", "operation failed",
@@ -1451,21 +1339,17 @@ get_system_info_ready (QmiClientNas *client,
     }
 
     if (!qmi_message_nas_get_system_info_output_get_result (output, &error)) {
-        g_printerr ("error: couldn't get system info: %s\n", error->message);
         g_print ("%s\n", json_dumps(json_pack("{sbssss}",
              "success", 0,
              "error", "couldn't get system info",
              "message", error->message
               ),json_print_flag));
-
         g_error_free (error);
         qmi_message_nas_get_system_info_output_unref (output);
         shutdown (FALSE);
         return;
     }
 
-    g_print ("[%s] Successfully got system info:\n",
-             qmi_device_get_path_display (ctx->device));
     json_output = json_pack("{sbss}",
              "success", 1,
              "device", qmi_device_get_path_display (ctx->device)
@@ -1511,11 +1395,11 @@ get_system_info_ready (QmiClientNas *client,
                 &service_status,
                 &preferred_data_path,
                 NULL)) {
-            g_print ("\tCDMA 1x service:\n"
-                     "\t\tStatus: '%s'\n"
-                     "\t\tPreferred data path: '%s'\n",
-                     qmi_nas_service_status_get_string (service_status),
-                     preferred_data_path ? "yes" : "no");
+            json_object_update(json_output, json_pack("{s{sssb}}",
+                 "cdma 1x service",
+                                "status", qmi_nas_service_status_get_string (service_status),
+                                "preferred data path", preferred_data_path
+                 ));
 
             if (qmi_message_nas_get_system_info_output_get_cdma_system_info (
                     output,
@@ -1532,26 +1416,61 @@ get_system_info_ready (QmiClientNas *client,
                     &packet_zone_valid, &packet_zone,
                     &network_id_valid, &mcc, &mnc,
                     NULL)) {
-                if (domain_valid)
-                    g_print ("\t\tDomain: '%s'\n", qmi_nas_network_service_domain_get_string (domain));
-                if (service_capability_valid)
-                    g_print ("\t\tService capability: '%s'\n", qmi_nas_network_service_domain_get_string (service_capability));
-                if (roaming_status_valid)
-                    g_print ("\t\tRoaming status: '%s'\n", qmi_nas_roaming_status_get_string (roaming_status));
-                if (forbidden_valid)
-                    g_print ("\t\tForbidden: '%s'\n", forbidden ? "yes" : "no");
-                if (prl_match_valid)
-                    g_print ("\t\tPRL match: '%s'\n", prl_match ? "yes" : "no");
-                if (p_rev_valid)
-                    g_print ("\t\tP-Rev: '%u'\n", p_rev);
-                if (base_station_p_rev_valid)
-                    g_print ("\t\tBase station P-Rev: '%u'\n", base_station_p_rev);
-                if (concurrent_service_support_valid)
-                    g_print ("\t\tConcurrent service support: '%s'\n", concurrent_service_support ? "yes" : "no");
-                if (cdma_system_id_valid) {
-                    g_print ("\t\tSID: '%" G_GUINT16_FORMAT"'\n", sid);
-                    g_print ("\t\tNID: '%" G_GUINT16_FORMAT"'\n", nid);
+                if (domain_valid) {
+                    json_object_update(json_object_get(json_output,"cdma 1x service"),json_pack("{ss}",
+                                "domain", qmi_nas_network_service_domain_get_string (domain)
+                                ));
                 }
+
+                if (service_capability_valid) {
+                    json_object_update(json_object_get(json_output,"cdma 1x service"),json_pack("{ss}",
+                                "service capability", qmi_nas_network_service_domain_get_string (service_capability)
+                                ));
+                }
+
+                if (roaming_status_valid) {
+                    json_object_update(json_object_get(json_output,"cdma 1x service"),json_pack("{ss}",
+                                "roaming status", qmi_nas_network_service_domain_get_string (roaming_status)
+                                ));
+                }
+
+                if (forbidden_valid) {
+                    json_object_update(json_object_get(json_output,"cdma 1x service"),json_pack("{sb}",
+                                "forbidden", forbidden
+                                ));
+                }
+
+                if (prl_match_valid) {
+                    json_object_update(json_object_get(json_output,"cdma 1x service"),json_pack("{sb}",
+                                "prl match", prl_match
+                                ));
+                }
+
+                if (p_rev_valid) {
+                    json_object_update(json_object_get(json_output,"cdma 1x service"),json_pack("{si}",
+                                "p-rev", p_rev
+                                ));
+                }
+
+                if (base_station_p_rev_valid) {
+                    json_object_update(json_object_get(json_output,"cdma 1x service"),json_pack("{si}",
+                                "base station p-rev", base_station_p_rev
+                                ));
+                }
+
+                if (concurrent_service_support_valid) {
+                    json_object_update(json_object_get(json_output,"cdma 1x service"),json_pack("{sb}",
+                                "concurrent service support", concurrent_service_support
+                                ));
+                }
+
+                if (cdma_system_id_valid) {
+                    json_object_update(json_object_get(json_output,"cdma 1x service"),json_pack("{sisi}",
+                                "sid", sid,
+                                "nid", nid
+                                ));
+                }
+
                 if (base_station_info_valid) {
                     gdouble latitude_degrees;
                     gdouble longitude_degrees;
@@ -1559,18 +1478,24 @@ get_system_info_ready (QmiClientNas *client,
                     /* TODO: give degrees, minutes, seconds */
                     latitude_degrees = ((gdouble)base_station_latitude * 0.25)/3600.0;
                     longitude_degrees = ((gdouble)base_station_longitude * 0.25)/3600.0;
-                    g_print ("\t\tBase station ID: '%" G_GUINT16_FORMAT"'\n", base_station_id);
-                    g_print ("\t\tBase station latitude: '%lf'º\n", latitude_degrees);
-                    g_print ("\t\tBase station longitude: '%lf'º\n", longitude_degrees);
+                    json_object_update(json_object_get(json_output,"cdma 1x service"),json_pack("{sisfsf}",
+                                "base station id", base_station_id,
+                                "base station latitude", latitude_degrees,
+                                "base station longitude", longitude_degrees
+                                ));
                 }
-                if (packet_zone_valid)
-                    g_print ("\t\tPacket zone: '%" G_GUINT16_FORMAT "'\n", packet_zone);
+
+                if (packet_zone_valid) {
+                    json_object_update(json_object_get(json_output,"cdma 1x service"),json_pack("{si}",
+                                "packet zone", packet_zone
+                                ));
+                }
+
                 if (network_id_valid) {
-                    g_print ("\t\tMCC: '%s'\n", mcc);
-                    if ((guchar)mnc[2] == 0xFF)
-                        g_print ("\t\tMNC: '%.2s'\n", mnc);
-                    else
-                        g_print ("\t\tMNC: '%.3s'\n", mnc);
+                    json_object_update(json_object_get(json_output,"cdma 1x service"),json_pack("{ssss}",
+                                "mcc", mcc,
+                                "mnc", mnc
+                                ));
                 }
             }
 
@@ -1579,10 +1504,16 @@ get_system_info_ready (QmiClientNas *client,
                     &geo_system_index,
                     &registration_period,
                     NULL)) {
-                if (geo_system_index != 0xFFFF)
-                    g_print ("\t\tGeo system index: '%" G_GUINT16_FORMAT "'\n", geo_system_index);
-                if (registration_period != 0xFFFF)
-                    g_print ("\t\tRegistration period: '%" G_GUINT16_FORMAT "'\n", registration_period);
+                if (geo_system_index != 0xFFFF) {
+                    json_object_update(json_object_get(json_output,"cdma 1x service"),json_pack("{si}",
+                                "geo system index", geo_system_index
+                                ));
+                }
+                if (registration_period != 0xFFFF) {
+                    json_object_update(json_object_get(json_output,"cdma 1x service"),json_pack("{si}",
+                                "registration period", registration_period
+                                ));
+                }
             }
         }
     }
@@ -1614,11 +1545,11 @@ get_system_info_ready (QmiClientNas *client,
                 &service_status,
                 &preferred_data_path,
                 NULL)) {
-            g_print ("\tCDMA 1xEV-DO (HDR) service:\n"
-                     "\t\tStatus: '%s'\n"
-                     "\t\tPreferred data path: '%s'\n",
-                     qmi_nas_service_status_get_string (service_status),
-                     preferred_data_path ? "yes" : "no");
+            json_object_update(json_output, json_pack("{s{sssb}}",
+                 "cdma 1xev-do service",
+                                "status", qmi_nas_service_status_get_string (service_status),
+                                "preferred data path", preferred_data_path
+                 ));
 
             if (qmi_message_nas_get_system_info_output_get_hdr_system_info (
                     output,
@@ -1631,30 +1562,64 @@ get_system_info_ready (QmiClientNas *client,
                     &protocol_revision_valid, &protocol_revision,
                     &is_856_system_id_valid, &is_856_system_id,
                     NULL)) {
-                if (domain_valid)
-                    g_print ("\t\tDomain: '%s'\n", qmi_nas_network_service_domain_get_string (domain));
-                if (service_capability_valid)
-                    g_print ("\t\tService capability: '%s'\n", qmi_nas_network_service_domain_get_string (service_capability));
-                if (roaming_status_valid)
-                    g_print ("\t\tRoaming status: '%s'\n", qmi_nas_roaming_status_get_string (roaming_status));
-                if (forbidden_valid)
-                    g_print ("\t\tForbidden: '%s'\n", forbidden ? "yes" : "no");
-                if (prl_match_valid)
-                    g_print ("\t\tPRL match: '%s'\n", prl_match ? "yes" : "no");
-                if (personality_valid)
-                    g_print ("\t\tPersonality: '%s'\n", qmi_nas_hdr_personality_get_string (personality));
-                if (protocol_revision_valid)
-                    g_print ("\t\tProtocol revision: '%s'\n", qmi_nas_hdr_protocol_revision_get_string (protocol_revision));
-                if (is_856_system_id_valid)
-                    g_print ("\t\tIS-856 system ID: '%s'\n", is_856_system_id);
+                if (domain_valid) {
+                    json_object_update(json_object_get(json_output,"cdma 1xev-do service"),json_pack("{ss}",
+                                "domain", qmi_nas_network_service_domain_get_string (domain)
+                                ));
+                }
+
+                if (service_capability_valid) {
+                    json_object_update(json_object_get(json_output,"cdma 1xev-do service"),json_pack("{ss}",
+                                "service capability", qmi_nas_network_service_domain_get_string (service_capability)
+                                ));
+                }
+
+                if (roaming_status_valid) {
+                    json_object_update(json_object_get(json_output,"cdma 1xev-do service"),json_pack("{ss}",
+                                "roaming status", qmi_nas_network_service_domain_get_string (roaming_status)
+                                ));
+                }
+
+                if (forbidden_valid) {
+                    json_object_update(json_object_get(json_output,"cdma 1xev-do service"),json_pack("{sb}",
+                                "forbidden", forbidden
+                                ));
+                }
+
+                if (prl_match_valid) {
+                    json_object_update(json_object_get(json_output,"cdma 1xev-do service"),json_pack("{sb}",
+                                "prl match", prl_match
+                                ));
+                }
+
+                if (personality_valid) {
+                    json_object_update(json_object_get(json_output,"cdma 1xev-do service"),json_pack("{ss}",
+                                "personality", qmi_nas_hdr_personality_get_string (personality)
+                                ));
+                }
+
+                if (protocol_revision_valid) {
+                    json_object_update(json_object_get(json_output,"cdma 1xev-do service"),json_pack("{ss}",
+                                "protocol revision", qmi_nas_hdr_protocol_revision_get_string (protocol_revision)
+                                ));
+                }
+
+                if (is_856_system_id_valid) {
+                    json_object_update(json_object_get(json_output,"cdma 1xev-do service"),json_pack("{ss}",
+                                "is-856 system id", is_856_system_id
+                                ));
+                }
             }
 
             if (qmi_message_nas_get_system_info_output_get_additional_hdr_system_info (
                     output,
                     &geo_system_index,
                     NULL)) {
-                if (geo_system_index != 0xFFFF)
-                    g_print ("\t\tGeo system index: '%" G_GUINT16_FORMAT "'\n", geo_system_index);
+                if (geo_system_index != 0xFFFF) {
+                    json_object_update(json_object_get(json_output,"cdma 1xev-do service"),json_pack("{si}",
+                                "geo system index", geo_system_index
+                                ));
+                }
             }
         }
     }
@@ -1698,13 +1663,12 @@ get_system_info_ready (QmiClientNas *client,
                 &true_service_status,
                 &preferred_data_path,
                 NULL)) {
-            g_print ("\tGSM service:\n"
-                     "\t\tStatus: '%s'\n"
-                     "\t\tTrue Status: '%s'\n"
-                     "\t\tPreferred data path: '%s'\n",
-                     qmi_nas_service_status_get_string (service_status),
-                     qmi_nas_service_status_get_string (true_service_status),
-                     preferred_data_path ? "yes" : "no");
+            json_object_update(json_output, json_pack("{s{sssssb}}",
+                 "gsm service",
+                                "status", qmi_nas_service_status_get_string (service_status),
+                                "true status", qmi_nas_service_status_get_string (true_service_status),
+                                "preferred data path", preferred_data_path
+                 ));
 
             if (qmi_message_nas_get_system_info_output_get_gsm_system_info (
                     output,
@@ -1719,33 +1683,66 @@ get_system_info_ready (QmiClientNas *client,
                     &egprs_support_valid, &egprs_support,
                     &dtm_support_valid, &dtm_support,
                     NULL)) {
-                if (domain_valid)
-                    g_print ("\t\tDomain: '%s'\n", qmi_nas_network_service_domain_get_string (domain));
-                if (service_capability_valid)
-                    g_print ("\t\tService capability: '%s'\n", qmi_nas_network_service_domain_get_string (service_capability));
-                if (roaming_status_valid)
-                    g_print ("\t\tRoaming status: '%s'\n", qmi_nas_roaming_status_get_string (roaming_status));
-                if (forbidden_valid)
-                    g_print ("\t\tForbidden: '%s'\n", forbidden ? "yes" : "no");
-                if (lac_valid)
-                    g_print ("\t\tLocation Area Code: '%" G_GUINT16_FORMAT"'\n", lac);
-                if (cid_valid)
-                    g_print ("\t\tCell ID: '%u'\n", cid);
-                if (registration_reject_info_valid)
-                    g_print ("\t\tRegistration reject: '%s' (%u)\n",
-                             qmi_nas_network_service_domain_get_string (registration_reject_domain),
-                             registration_reject_cause);
-                if (network_id_valid) {
-                    g_print ("\t\tMCC: '%s'\n", mcc);
-                    if ((guchar)mnc[2] == 0xFF)
-                        g_print ("\t\tMNC: '%.2s'\n", mnc);
-                    else
-                        g_print ("\t\tMNC: '%.3s'\n", mnc);
+                if (domain_valid) {
+                    json_object_update(json_object_get(json_output,"gsm service"),json_pack("{ss}",
+                                "domain", qmi_nas_network_service_domain_get_string (domain)
+                                ));
                 }
-                if (egprs_support_valid)
-                    g_print ("\t\tE-GPRS supported: '%s'\n", egprs_support ? "yes" : "no");
-                if (dtm_support_valid)
-                    g_print ("\t\tDual Transfer Mode supported: '%s'\n", dtm_support ? "yes" : "no");
+
+                if (service_capability_valid) {
+                    json_object_update(json_object_get(json_output,"gsm service"),json_pack("{ss}",
+                                "service capability", qmi_nas_network_service_domain_get_string (service_capability)
+                                ));
+                }
+
+                if (roaming_status_valid) {
+                    json_object_update(json_object_get(json_output,"gsm service"),json_pack("{ss}",
+                                "roaming status", qmi_nas_network_service_domain_get_string (roaming_status)
+                                ));
+                }
+
+                if (forbidden_valid) {
+                    json_object_update(json_object_get(json_output,"gsm service"),json_pack("{sb}",
+                                "forbidden", forbidden
+                                ));
+                }
+
+                if (lac_valid) {
+                    json_object_update(json_object_get(json_output,"gsm service"),json_pack("{si}",
+                                "location area code", lac
+                                ));
+                }
+
+                if (cid_valid) {
+                    json_object_update(json_object_get(json_output,"gsm service"),json_pack("{si}",
+                                "cell id", cid
+                                ));
+                }
+
+                if (registration_reject_info_valid) {
+                    json_object_update(json_object_get(json_output,"gsm service"),json_pack("{sssi}",
+                                "registration reject", qmi_nas_network_service_domain_get_string (registration_reject_domain),
+                                "registration reject cause", registration_reject_cause
+                                ));
+                }
+
+                if (network_id_valid) {
+                    json_object_update(json_object_get(json_output,"gsm service"),json_pack("{ssss}",
+                                "mcc", mcc,
+                                "mnc", mnc
+                                ));
+                }
+                if (egprs_support_valid) {
+                    json_object_update(json_object_get(json_output,"gsm service"),json_pack("{sb}",
+                                "e-gprs supported", egprs_support
+                                ));
+                }
+
+                if (dtm_support_valid) {
+                    json_object_update(json_object_get(json_output,"gsm service"),json_pack("{sb}",
+                                "dual transfer mode supported", dtm_support
+                                ));
+                }
             }
 
             if (qmi_message_nas_get_system_info_output_get_additional_gsm_system_info (
@@ -1753,9 +1750,15 @@ get_system_info_ready (QmiClientNas *client,
                     &geo_system_index,
                     &cell_broadcast_support,
                     NULL)) {
-                if (geo_system_index != 0xFFFF)
-                    g_print ("\t\tGeo system index: '%" G_GUINT16_FORMAT "'\n", geo_system_index);
-                g_print ("\t\tCell broadcast support: '%s'\n", qmi_nas_cell_broadcast_capability_get_string (cell_broadcast_support));
+                if (geo_system_index != 0xFFFF) {
+                    json_object_update(json_object_get(json_output,"gsm service"),json_pack("{si}",
+                                "geo system index", geo_system_index
+                                ));
+                }
+
+                json_object_update(json_object_get(json_output,"gsm service"),json_pack("{ss}",
+                                "cell broadcast support", qmi_nas_cell_broadcast_capability_get_string (cell_broadcast_support)
+                                ));
             }
 
             if (qmi_message_nas_get_system_info_output_get_gsm_call_barring_status (
@@ -1763,15 +1766,19 @@ get_system_info_ready (QmiClientNas *client,
                     &call_barring_status_cs,
                     &call_barring_status_ps,
                     NULL)) {
-                g_print ("\t\tCall barring status (CS): '%s'\n", qmi_nas_call_barring_status_get_string (call_barring_status_cs));
-                g_print ("\t\tCall barring status (PS): '%s'\n", qmi_nas_call_barring_status_get_string (call_barring_status_ps));
+                json_object_update(json_object_get(json_output,"gsm service"),json_pack("{ssss}",
+                                "call barring status cs", qmi_nas_call_barring_status_get_string (call_barring_status_cs),
+                                "call barring status ps", qmi_nas_call_barring_status_get_string (call_barring_status_ps)
+                                ));
             }
 
             if (qmi_message_nas_get_system_info_output_get_gsm_cipher_domain (
                     output,
                     &cipher_domain,
                     NULL)) {
-                g_print ("\t\tCipher Domain: '%s'\n", qmi_nas_network_service_domain_get_string (cipher_domain));
+                json_object_update(json_object_get(json_output,"gsm service"),json_pack("{ss}",
+                                "cipher domain", qmi_nas_network_service_domain_get_string (cipher_domain)
+                                ));
             }
         }
     }
@@ -1817,13 +1824,12 @@ get_system_info_ready (QmiClientNas *client,
                 &true_service_status,
                 &preferred_data_path,
                 NULL)) {
-            g_print ("\tWCDMA service:\n"
-                     "\t\tStatus: '%s'\n"
-                     "\t\tTrue Status: '%s'\n"
-                     "\t\tPreferred data path: '%s'\n",
-                     qmi_nas_service_status_get_string (service_status),
-                     qmi_nas_service_status_get_string (true_service_status),
-                     preferred_data_path ? "yes" : "no");
+            json_object_update(json_output, json_pack("{s{sssssb}}",
+                 "wcdma service",
+                                "status", qmi_nas_service_status_get_string (service_status),
+                                "true status", qmi_nas_service_status_get_string (true_service_status),
+                                "preferred data path", preferred_data_path
+                 ));
 
             if (qmi_message_nas_get_system_info_output_get_wcdma_system_info (
                     output,
@@ -1839,35 +1845,73 @@ get_system_info_ready (QmiClientNas *client,
                     &hs_service_valid, &hs_service,
                     &primary_scrambling_code_valid, &primary_scrambling_code,
                 NULL)) {
-                if (domain_valid)
-                    g_print ("\t\tDomain: '%s'\n", qmi_nas_network_service_domain_get_string (domain));
-                if (service_capability_valid)
-                    g_print ("\t\tService capability: '%s'\n", qmi_nas_network_service_domain_get_string (service_capability));
-                if (roaming_status_valid)
-                    g_print ("\t\tRoaming status: '%s'\n", qmi_nas_roaming_status_get_string (roaming_status));
-                if (forbidden_valid)
-                    g_print ("\t\tForbidden: '%s'\n", forbidden ? "yes" : "no");
-                if (lac_valid)
-                    g_print ("\t\tLocation Area Code: '%" G_GUINT16_FORMAT"'\n", lac);
-                if (cid_valid)
-                    g_print ("\t\tCell ID: '%u'\n", cid);
-                if (registration_reject_info_valid)
-                    g_print ("\t\tRegistration reject: '%s' (%u)\n",
-                             qmi_nas_network_service_domain_get_string (registration_reject_domain),
-                             registration_reject_cause);
-                if (network_id_valid) {
-                    g_print ("\t\tMCC: '%s'\n", mcc);
-                    if ((guchar)mnc[2] == 0xFF)
-                        g_print ("\t\tMNC: '%.2s'\n", mnc);
-                    else
-                        g_print ("\t\tMNC: '%.3s'\n", mnc);
+                if (domain_valid) {
+                    json_object_update(json_object_get(json_output,"wcdma service"),json_pack("{ss}",
+                                "domain", qmi_nas_network_service_domain_get_string (domain)
+                                ));
                 }
-                if (hs_call_status_valid)
-                    g_print ("\t\tHS call status: '%s'\n", qmi_nas_wcdma_hs_service_get_string (hs_call_status));
-                if (hs_service_valid)
-                    g_print ("\t\tHS service: '%s'\n", qmi_nas_wcdma_hs_service_get_string (hs_service));
-                if (primary_scrambling_code_valid)
-                    g_print ("\t\tPrimary scrambling code: '%" G_GUINT16_FORMAT"'\n", primary_scrambling_code);
+
+                if (service_capability_valid) {
+                    json_object_update(json_object_get(json_output,"wcdma service"),json_pack("{ss}",
+                                "service capability", qmi_nas_network_service_domain_get_string (service_capability)
+                                ));
+                }
+
+                if (roaming_status_valid) {
+                    json_object_update(json_object_get(json_output,"wcdma service"),json_pack("{ss}",
+                                "roaming status", qmi_nas_network_service_domain_get_string (roaming_status)
+                                ));
+                }
+
+                if (forbidden_valid) {
+                    json_object_update(json_object_get(json_output,"wcdma service"),json_pack("{sb}",
+                                "forbidden", forbidden
+                                ));
+                }
+
+                if (lac_valid) {
+                    json_object_update(json_object_get(json_output,"wcdma service"),json_pack("{si}",
+                                "location area code", lac
+                                ));
+                }
+
+                if (cid_valid) {
+                    json_object_update(json_object_get(json_output,"wcdma service"),json_pack("{si}",
+                                "cell id", cid
+                                ));
+                }
+
+                if (registration_reject_info_valid) {
+                    json_object_update(json_object_get(json_output,"wcdma service"),json_pack("{sssi}",
+                                "registration reject", qmi_nas_network_service_domain_get_string (registration_reject_domain),
+                                "registration reject cause", registration_reject_cause
+                                ));
+                }
+
+                if (network_id_valid) {
+                    json_object_update(json_object_get(json_output,"wcdma service"),json_pack("{ssss}",
+                                "mcc", mcc,
+                                "mnc", mnc
+                                ));
+                }
+
+                if (hs_call_status_valid) {
+                    json_object_update(json_object_get(json_output,"wcdma service"),json_pack("{ss}",
+                                "hs call status", qmi_nas_wcdma_hs_service_get_string (hs_call_status)
+                                ));
+                }
+
+                if (hs_service_valid) {
+                    json_object_update(json_object_get(json_output,"wcdma service"),json_pack("{ss}",
+                                "hs service", qmi_nas_wcdma_hs_service_get_string (hs_service)
+                                ));
+                }
+
+                if (primary_scrambling_code_valid) {
+                    json_object_update(json_object_get(json_output,"wcdma service"),json_pack("{si}",
+                                "primary_scrambling_code", primary_scrambling_code
+                                ));
+                }
             }
 
             if (qmi_message_nas_get_system_info_output_get_additional_wcdma_system_info (
@@ -1875,9 +1919,15 @@ get_system_info_ready (QmiClientNas *client,
                     &geo_system_index,
                     &cell_broadcast_support,
                     NULL)) {
-                if (geo_system_index != 0xFFFF)
-                    g_print ("\t\tGeo system index: '%" G_GUINT16_FORMAT "'\n", geo_system_index);
-                g_print ("\t\tCell broadcast support: '%s'\n", qmi_nas_cell_broadcast_capability_get_string (cell_broadcast_support));
+                if (geo_system_index != 0xFFFF) {
+                    json_object_update(json_object_get(json_output,"wcdma service"),json_pack("{si}",
+                                "geo system index", geo_system_index
+                                ));
+                }
+
+                json_object_update(json_object_get(json_output,"wcdma service"),json_pack("{ss}",
+                                "cell broadcast support", qmi_nas_cell_broadcast_capability_get_string (cell_broadcast_support)
+                                ));
             }
 
             if (qmi_message_nas_get_system_info_output_get_wcdma_call_barring_status (
@@ -1885,15 +1935,19 @@ get_system_info_ready (QmiClientNas *client,
                     &call_barring_status_cs,
                     &call_barring_status_ps,
                     NULL)) {
-                g_print ("\t\tCall barring status (CS): '%s'\n", qmi_nas_call_barring_status_get_string (call_barring_status_cs));
-                g_print ("\t\tCall barring status (PS): '%s'\n", qmi_nas_call_barring_status_get_string (call_barring_status_ps));
+                json_object_update(json_object_get(json_output,"wcdma service"),json_pack("{ssss}",
+                                "call barring status cs", qmi_nas_call_barring_status_get_string (call_barring_status_cs),
+                                "call barring status ps", qmi_nas_call_barring_status_get_string (call_barring_status_ps)
+                                ));
             }
 
             if (qmi_message_nas_get_system_info_output_get_wcdma_cipher_domain (
                     output,
                     &cipher_domain,
                     NULL)) {
-                g_print ("\t\tCipher Domain: '%s'\n", qmi_nas_network_service_domain_get_string (cipher_domain));
+                json_object_update(json_object_get(json_output,"wcdma service"),json_pack("{ss}",
+                                "cipher domain", qmi_nas_network_service_domain_get_string (cipher_domain)
+                                ));
             }
         }
     }
@@ -1933,13 +1987,12 @@ get_system_info_ready (QmiClientNas *client,
                 &true_service_status,
                 &preferred_data_path,
                 NULL)) {
-            g_print ("\tLTE service:\n"
-                     "\t\tStatus: '%s'\n"
-                     "\t\tTrue Status: '%s'\n"
-                     "\t\tPreferred data path: '%s'\n",
-                     qmi_nas_service_status_get_string (service_status),
-                     qmi_nas_service_status_get_string (true_service_status),
-                     preferred_data_path ? "yes" : "no");
+            json_object_update(json_output, json_pack("{s{sssssb}}",
+                 "lte service",
+                                "status", qmi_nas_service_status_get_string (service_status),
+                                "true status", qmi_nas_service_status_get_string (true_service_status),
+                                "preferred data path", preferred_data_path
+                 ));
 
             if (qmi_message_nas_get_system_info_output_get_lte_system_info (
                     output,
@@ -1953,53 +2006,90 @@ get_system_info_ready (QmiClientNas *client,
                     &network_id_valid, &mcc, &mnc,
                     &tac_valid, &tac,
                     NULL)) {
-                if (domain_valid)
-                    g_print ("\t\tDomain: '%s'\n", qmi_nas_network_service_domain_get_string (domain));
-                if (service_capability_valid)
-                    g_print ("\t\tService capability: '%s'\n", qmi_nas_network_service_domain_get_string (service_capability));
-                if (roaming_status_valid)
-                    g_print ("\t\tRoaming status: '%s'\n", qmi_nas_roaming_status_get_string (roaming_status));
-                if (forbidden_valid)
-                    g_print ("\t\tForbidden: '%s'\n", forbidden ? "yes" : "no");
-                if (lac_valid)
-                    g_print ("\t\tLocation Area Code: '%" G_GUINT16_FORMAT"'\n", lac);
-                if (cid_valid)
-                    g_print ("\t\tCell ID: '%u'\n", cid);
-                if (registration_reject_info_valid)
-                    g_print ("\t\tRegistration reject: '%s' (%u)\n",
-                             qmi_nas_network_service_domain_get_string (registration_reject_domain),
-                             registration_reject_cause);
-                if (network_id_valid) {
-                    g_print ("\t\tMCC: '%s'\n", mcc);
-                    if ((guchar)mnc[2] == 0xFF)
-                        g_print ("\t\tMNC: '%.2s'\n", mnc);
-                    else
-                        g_print ("\t\tMNC: '%.3s'\n", mnc);
+                if (domain_valid) {
+                    json_object_update(json_object_get(json_output,"lte service"),json_pack("{ss}",
+                                "domain", qmi_nas_network_service_domain_get_string (domain)
+                                ));
                 }
-                if (tac_valid)
-                    g_print ("\t\tTracking Area Code: '%" G_GUINT16_FORMAT"'\n", tac);
+
+                if (service_capability_valid) {
+                    json_object_update(json_object_get(json_output,"lte service"),json_pack("{ss}",
+                                "service capability", qmi_nas_network_service_domain_get_string (service_capability)
+                                ));
+                }
+
+                if (roaming_status_valid) {
+                    json_object_update(json_object_get(json_output,"lte service"),json_pack("{ss}",
+                                "roaming status", qmi_nas_network_service_domain_get_string (roaming_status)
+                                ));
+                }
+
+                if (forbidden_valid) {
+                    json_object_update(json_object_get(json_output,"lte service"),json_pack("{sb}",
+                                "forbidden", forbidden
+                                ));
+                }
+
+                if (lac_valid) {
+                    json_object_update(json_object_get(json_output,"lte service"),json_pack("{si}",
+                                "location area code", lac
+                                ));
+                }
+
+                if (cid_valid) {
+                    json_object_update(json_object_get(json_output,"lte service"),json_pack("{si}",
+                                "cell id", cid
+                                ));
+                }
+
+                if (registration_reject_info_valid) {
+                    json_object_update(json_object_get(json_output,"lte service"),json_pack("{sssi}",
+                                "registration reject", qmi_nas_network_service_domain_get_string (registration_reject_domain),
+                                "registration reject cause", registration_reject_cause
+                                ));
+                }
+
+                if (network_id_valid) {
+                    json_object_update(json_object_get(json_output,"lte service"),json_pack("{ssss}",
+                                "mcc", mcc,
+                                "mnc", mnc
+                                ));
+                }
+
+                if (tac_valid) {
+                    json_object_update(json_object_get(json_output,"lte service"),json_pack("{si}",
+                                "tracking area code", tac
+                                ));
+                }
             }
 
             if (qmi_message_nas_get_system_info_output_get_additional_lte_system_info (
                     output,
                     &geo_system_index,
                     NULL)) {
-                if (geo_system_index != 0xFFFF)
-                    g_print ("\t\tGeo system index: '%" G_GUINT16_FORMAT "'\n", geo_system_index);
+                if (geo_system_index != 0xFFFF) {
+                    json_object_update(json_object_get(json_output,"lte service"),json_pack("{si}",
+                                "geo system index", geo_system_index
+                                ));
+                }
             }
 
             if (qmi_message_nas_get_system_info_output_get_lte_voice_support (
                     output,
                     &voice_support,
                     NULL)) {
-                g_print ("\t\tVoice support: '%s'\n", voice_support ? "yes" : "no");
+                json_object_update(json_object_get(json_output,"lte service"),json_pack("{sb}",
+                                "voice support", voice_support
+                                ));
             }
 
             if (qmi_message_nas_get_system_info_output_get_lte_embms_coverage_info_support (
                     output,
                     &embms_coverage_info_support,
                     NULL)) {
-                g_print ("\t\teMBMS coverage info support: '%s'\n", embms_coverage_info_support ? "yes" : "no");
+                json_object_update(json_object_get(json_output,"lte service"),json_pack("{sb}",
+                                "embms coverage info support", embms_coverage_info_support
+                                ));
             }
         }
     }
@@ -2048,13 +2138,12 @@ get_system_info_ready (QmiClientNas *client,
                 &true_service_status,
                 &preferred_data_path,
                 NULL)) {
-            g_print ("\tTD-SCDMA service:\n"
-                     "\t\tStatus: '%s'\n"
-                     "\t\tTrue Status: '%s'\n"
-                     "\t\tPreferred data path: '%s'\n",
-                     qmi_nas_service_status_get_string (service_status),
-                     qmi_nas_service_status_get_string (true_service_status),
-                     preferred_data_path ? "yes" : "no");
+            json_object_update(json_output, json_pack("{s{sssssb}}",
+                 "td-scdma service",
+                                "status", qmi_nas_service_status_get_string (service_status),
+                                "true status", qmi_nas_service_status_get_string (true_service_status),
+                                "preferred data path", preferred_data_path
+                 ));
 
             if (qmi_message_nas_get_system_info_output_get_td_scdma_system_info (
                     output,
@@ -2074,43 +2163,98 @@ get_system_info_ready (QmiClientNas *client,
                     &call_barring_status_ps_valid, &call_barring_status_ps,
                     &cipher_domain_valid, &cipher_domain,
                     NULL)) {
-                if (domain_valid)
-                    g_print ("\t\tDomain: '%s'\n", qmi_nas_network_service_domain_get_string (domain));
-                if (service_capability_valid)
-                    g_print ("\t\tService capability: '%s'\n", qmi_nas_network_service_domain_get_string (service_capability));
-                if (roaming_status_valid)
-                    g_print ("\t\tRoaming status: '%s'\n", qmi_nas_roaming_status_get_string (roaming_status));
-                if (forbidden_valid)
-                    g_print ("\t\tForbidden: '%s'\n", forbidden ? "yes" : "no");
-                if (lac_valid)
-                    g_print ("\t\tLocation Area Code: '%" G_GUINT16_FORMAT"'\n", lac);
-                if (cid_valid)
-                    g_print ("\t\tCell ID: '%u'\n", cid);
-                if (registration_reject_info_valid)
-                    g_print ("\t\tRegistration reject: '%s' (%u)\n",
-                             qmi_nas_network_service_domain_get_string (registration_reject_domain),
-                             registration_reject_cause);
-                if (network_id_valid) {
-                    g_print ("\t\tMCC: '%s'\n", mcc);
-                    if ((guchar)mnc[2] == 0xFF)
-                        g_print ("\t\tMNC: '%.2s'\n", mnc);
-                    else
-                        g_print ("\t\tMNC: '%.3s'\n", mnc);
+                if (domain_valid) {
+                    json_object_update(json_object_get(json_output,"ts-scdma service"),json_pack("{ss}",
+                                "domain", qmi_nas_network_service_domain_get_string (domain)
+                                ));
                 }
-                if (hs_call_status_valid)
-                    g_print ("\t\tHS call status: '%s'\n", qmi_nas_wcdma_hs_service_get_string (hs_call_status));
-                if (hs_service_valid)
-                    g_print ("\t\tHS service: '%s'\n", qmi_nas_wcdma_hs_service_get_string (hs_service));
-                if (cell_parameter_id_valid)
-                    g_print ("\t\tCell parameter ID: '%" G_GUINT16_FORMAT"'\n", cell_parameter_id);
-                if (cell_broadcast_support_valid)
-                    g_print ("\t\tCell broadcast support: '%s'\n", qmi_nas_cell_broadcast_capability_get_string (cell_broadcast_support));
-                if (call_barring_status_cs_valid)
-                    g_print ("\t\tCall barring status (CS): '%s'\n", qmi_nas_call_barring_status_get_string (call_barring_status_cs));
-                if (call_barring_status_ps_valid)
-                    g_print ("\t\tCall barring status (PS): '%s'\n", qmi_nas_call_barring_status_get_string (call_barring_status_ps));
-                if (cipher_domain_valid)
-                    g_print ("\t\tCipher Domain: '%s'\n", qmi_nas_network_service_domain_get_string (cipher_domain));
+
+                if (service_capability_valid) {
+                    json_object_update(json_object_get(json_output,"ts-scdma service"),json_pack("{ss}",
+                                "service capability", qmi_nas_network_service_domain_get_string (service_capability)
+                                ));
+                }
+
+                if (roaming_status_valid) {
+                    json_object_update(json_object_get(json_output,"ts-scdma service"),json_pack("{ss}",
+                                "roaming status", qmi_nas_network_service_domain_get_string (roaming_status)
+                                ));
+                }
+
+                if (forbidden_valid) {
+                    json_object_update(json_object_get(json_output,"ts-scdma service"),json_pack("{sb}",
+                                "forbidden", forbidden
+                                ));
+                }
+
+                if (lac_valid) {
+                    json_object_update(json_object_get(json_output,"ts-scdma service"),json_pack("{si}",
+                                "location area code", lac
+                                ));
+                }
+
+                if (cid_valid) {
+                    json_object_update(json_object_get(json_output,"ts-scdma service"),json_pack("{si}",
+                                "cell id", cid
+                                ));
+                }
+
+                if (registration_reject_info_valid) {
+                    json_object_update(json_object_get(json_output,"ts-scdma service"),json_pack("{sssi}",
+                                "registration reject", qmi_nas_network_service_domain_get_string (registration_reject_domain),
+                                "registration reject cause", registration_reject_cause
+                                ));
+                }
+
+                if (network_id_valid) {
+                    json_object_update(json_object_get(json_output,"ts-scdma service"),json_pack("{ssss}",
+                                "mcc", mcc,
+                                "mnc", mnc
+                                ));
+                }
+
+                if (hs_call_status_valid) {
+                    json_object_update(json_object_get(json_output,"ts-scdma service"),json_pack("{ss}",
+                                "hs call status", qmi_nas_wcdma_hs_service_get_string (hs_call_status)
+                                ));
+                }
+
+                if (hs_service_valid) {
+                    json_object_update(json_object_get(json_output,"ts-scdma service"),json_pack("{ss}",
+                                "hs service", qmi_nas_wcdma_hs_service_get_string (hs_service)
+                                ));
+                }
+
+                if (cell_parameter_id_valid) {
+                    json_object_update(json_object_get(json_output,"ts-scdma service"),json_pack("{si}",
+                                "cell parameter id", cid
+                                ));
+                }
+
+                if (cell_broadcast_support_valid) {
+                    json_object_update(json_object_get(json_output,"ts-scdma service"),json_pack("{ss}",
+                                "cell broadcast support", qmi_nas_cell_broadcast_capability_get_string (cell_broadcast_support)
+                                ));
+                }
+
+                if (call_barring_status_cs_valid) {
+                    json_object_update(json_object_get(json_output,"ts-scdma service"),json_pack("{ss}",
+                                "call barring status cs", qmi_nas_call_barring_status_get_string (call_barring_status_cs)
+                                ));
+                }
+
+                if (call_barring_status_ps_valid) {
+                    json_object_update(json_object_get(json_output,"ts-scdma service"),json_pack("{ss}",
+                                "call barring status ps", qmi_nas_call_barring_status_get_string (call_barring_status_ps)
+                                ));
+                }
+
+                if (cipher_domain_valid) {
+                    json_object_update(json_object_get(json_output,"ts-scdma service"),json_pack("{ss}",
+                                "cipher domain", qmi_nas_network_service_domain_get_string (cipher_domain)
+                                ));
+                }
+
             }
         }
 
@@ -2122,13 +2266,16 @@ get_system_info_ready (QmiClientNas *client,
                     output,
                     &sim_reject_info,
                     NULL)) {
-                g_print ("\tSIM reject info: '%s'\n", qmi_nas_sim_reject_state_get_string (sim_reject_info));
+                json_object_update(json_output, json_pack("{ss}",
+                    "sim reject info", qmi_nas_sim_reject_state_get_string (sim_reject_info)
+                    ));
             }
         }
     }
 
     g_print ("%s\n", json_dumps(json_output,json_print_flag));
     free(json_output);
+
     qmi_message_nas_get_system_info_output_unref (output);
     shutdown (TRUE);
 }
@@ -2142,17 +2289,28 @@ get_technology_preference_ready (QmiClientNas *client,
     QmiNasRadioTechnologyPreference preference;
     QmiNasPreferenceDuration duration;
     gchar *preference_string;
+    json_t *json_output;
 
     output = qmi_client_nas_get_technology_preference_finish (client, res, &error);
     if (!output) {
-        g_printerr ("error: operation failed: %s\n", error->message);
+        g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+             "success", 0,
+             "error", "operation failed",
+             "message", error->message
+              ),json_print_flag));
+
         g_error_free (error);
         shutdown (FALSE);
         return;
     }
 
     if (!qmi_message_nas_get_technology_preference_output_get_result (output, &error)) {
-        g_printerr ("error: couldn't get technology preference: %s\n", error->message);
+        g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+             "success", 0,
+             "error", "couldn't get technology preference",
+             "message", error->message
+              ),json_print_flag));
+
         g_error_free (error);
         qmi_message_nas_get_technology_preference_output_unref (output);
         shutdown (FALSE);
@@ -2166,11 +2324,12 @@ get_technology_preference_ready (QmiClientNas *client,
         NULL);
 
     preference_string = qmi_nas_radio_technology_preference_build_string_from_mask (preference);
-    g_print ("[%s] Successfully got technology preference\n"
-             "\tActive: '%s', duration: '%s'\n",
-             qmi_device_get_path_display (ctx->device),
-             preference_string,
-             qmi_nas_preference_duration_get_string (duration));
+    json_output = json_pack("{sbssssss}",
+             "success", 1,
+             "device", qmi_device_get_path_display (ctx->device),
+             "active", preference_string,
+             "duration", qmi_nas_preference_duration_get_string (duration)
+              );
     g_free (preference_string);
 
     if (qmi_message_nas_get_technology_preference_output_get_persistent (
@@ -2178,10 +2337,14 @@ get_technology_preference_ready (QmiClientNas *client,
             &preference,
             NULL)) {
         preference_string = qmi_nas_radio_technology_preference_build_string_from_mask (preference);
-        g_print ("\tPersistent: '%s'\n",
-                 preference_string);
+        json_object_update(json_output, json_pack("{ss}",
+                 "persistent", preference_string
+                 ));
         g_free (preference_string);
     }
+
+    g_print ("%s\n", json_dumps(json_output,json_print_flag));
+    free(json_output);
 
     qmi_message_nas_get_technology_preference_output_unref (output);
     shutdown (TRUE);
@@ -2206,32 +2369,47 @@ get_system_selection_preference_ready (QmiClientNas *client,
     guint16 mcc;
     guint16 mnc;
     gboolean has_pcs_digit;
+    json_t *json_output;
 
     output = qmi_client_nas_get_system_selection_preference_finish (client, res, &error);
     if (!output) {
-        g_printerr ("error: operation failed: %s\n", error->message);
+        g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+             "success", 0,
+             "error", "operation failed",
+             "message", error->message
+              ),json_print_flag));
+
         g_error_free (error);
         shutdown (FALSE);
         return;
     }
 
     if (!qmi_message_nas_get_system_selection_preference_output_get_result (output, &error)) {
-        g_printerr ("error: couldn't get system_selection preference: %s\n", error->message);
+        g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+             "success", 0,
+             "error", "couldn't get system selection preference",
+             "message", error->message
+              ),json_print_flag));
+
         g_error_free (error);
         qmi_message_nas_get_system_selection_preference_output_unref (output);
         shutdown (FALSE);
         return;
     }
 
-    g_print ("[%s] Successfully got system selection preference\n",
-             qmi_device_get_path_display (ctx->device));
+    json_output = json_pack("{sbss}",
+             "success", 1,
+             "device", qmi_device_get_path_display (ctx->device)
+              );
+
 
     if (qmi_message_nas_get_system_selection_preference_output_get_emergency_mode (
             output,
             &emergency_mode,
             NULL)) {
-        g_print ("\tEmergency mode: '%s'\n",
-                 emergency_mode ? "yes" : "no");
+        json_object_update(json_output, json_pack("{sb}",
+             "emergency mode", emergency_mode
+             ));
     }
 
     if (qmi_message_nas_get_system_selection_preference_output_get_mode_preference (
@@ -2241,7 +2419,9 @@ get_system_selection_preference_ready (QmiClientNas *client,
         gchar *str;
 
         str = qmi_nas_rat_mode_preference_build_string_from_mask (mode_preference);
-        g_print ("\tMode preference: '%s'\n", str);
+        json_object_update(json_output, json_pack("{ss}",
+             "mode preference", str
+             ));
         g_free (str);
     }
 
@@ -2252,7 +2432,9 @@ get_system_selection_preference_ready (QmiClientNas *client,
         gchar *str;
 
         str = qmi_nas_band_preference_build_string_from_mask (band_preference);
-        g_print ("\tBand preference: '%s'\n", str);
+        json_object_update(json_output, json_pack("{ss}",
+             "band preference", str
+             ));
         g_free (str);
     }
 
@@ -2263,7 +2445,9 @@ get_system_selection_preference_ready (QmiClientNas *client,
         gchar *str;
 
         str = qmi_nas_lte_band_preference_build_string_from_mask (lte_band_preference);
-        g_print ("\tLTE band preference: '%s'\n", str);
+        json_object_update(json_output, json_pack("{ss}",
+             "lte band preference", str
+             ));
         g_free (str);
     }
 
@@ -2274,7 +2458,9 @@ get_system_selection_preference_ready (QmiClientNas *client,
         gchar *str;
 
         str = qmi_nas_td_scdma_band_preference_build_string_from_mask (td_scdma_band_preference);
-        g_print ("\tTD-SCDMA band preference: '%s'\n", str);
+        json_object_update(json_output, json_pack("{ss}",
+             "td-scdma band preference", str
+             ));
         g_free (str);
     }
 
@@ -2282,24 +2468,27 @@ get_system_selection_preference_ready (QmiClientNas *client,
             output,
             &cdma_prl_preference,
             NULL)) {
-        g_print ("\tCDMA PRL preference: '%s'\n",
-                 qmi_nas_cdma_prl_preference_get_string (cdma_prl_preference));
+        json_object_update(json_output, json_pack("{ss}",
+             "cdma prl preference", qmi_nas_cdma_prl_preference_get_string (cdma_prl_preference)
+             ));
     }
 
     if (qmi_message_nas_get_system_selection_preference_output_get_roaming_preference (
             output,
             &roaming_preference,
             NULL)) {
-        g_print ("\tRoaming preference: '%s'\n",
-                 qmi_nas_roaming_preference_get_string (roaming_preference));
+        json_object_update(json_output, json_pack("{ss}",
+             "roaming preference", qmi_nas_roaming_preference_get_string (roaming_preference)
+             ));
     }
 
     if (qmi_message_nas_get_system_selection_preference_output_get_network_selection_preference (
             output,
             &network_selection_preference,
             NULL)) {
-        g_print ("\tNetwork selection preference: '%s'\n",
-                 qmi_nas_network_selection_preference_get_string (network_selection_preference));
+        json_object_update(json_output, json_pack("{ss}",
+             "network selection preference", qmi_nas_network_selection_preference_get_string (network_selection_preference)
+             ));
     }
 
 
@@ -2307,16 +2496,18 @@ get_system_selection_preference_ready (QmiClientNas *client,
             output,
             &service_domain_preference,
             NULL)) {
-        g_print ("\tService domain preference: '%s'\n",
-                 qmi_nas_service_domain_preference_get_string (service_domain_preference));
+        json_object_update(json_output, json_pack("{ss}",
+             "service domain preference", qmi_nas_service_domain_preference_get_string (service_domain_preference)
+             ));
     }
 
     if (qmi_message_nas_get_system_selection_preference_output_get_gsm_wcdma_acquisition_order_preference (
             output,
             &gsm_wcdma_acquisition_order_preference,
             NULL)) {
-        g_print ("\tService selection preference: '%s'\n",
-                 qmi_nas_gsm_wcdma_acquisition_order_preference_get_string (gsm_wcdma_acquisition_order_preference));
+        json_object_update(json_output, json_pack("{ss}",
+             "service selection preference", qmi_nas_gsm_wcdma_acquisition_order_preference_get_string (gsm_wcdma_acquisition_order_preference)
+             ));
     }
 
     if (qmi_message_nas_get_system_selection_preference_output_get_manual_network_selection (
@@ -2325,14 +2516,16 @@ get_system_selection_preference_ready (QmiClientNas *client,
             &mnc,
             &has_pcs_digit,
             NULL)) {
-        g_print ("\tManual network selection:\n"
-                 "\t\tMCC: '%" G_GUINT16_FORMAT"'\n"
-                 "\t\tMNC: '%" G_GUINT16_FORMAT"'\n"
-                 "\t\tMCC with PCS digit: '%s'\n",
-                 mcc,
-                 mnc,
-                 has_pcs_digit ? "yes" : "no");
+        json_object_update(json_output, json_pack("{s{sisisb}}",
+                "manual network selection",
+                        "mcc", mcc,
+                        "mnc", mnc,
+                        "mcc with pcs digit", has_pcs_digit
+             ));
     }
+
+    g_print ("%s\n", json_dumps(json_output,json_print_flag));
+    free(json_output);
 
     qmi_message_nas_get_system_selection_preference_output_unref (output);
     shutdown (TRUE);
@@ -2346,7 +2539,10 @@ set_system_selection_preference_input_create (const gchar *str)
     GError *error = NULL;
 
     if (!qmicli_read_rat_mode_pref_from_string (str, &pref)) {
-        g_printerr ("error: failed to parse mode pref\n");
+        g_print ("%s\n", json_dumps(json_pack("{sbss}",
+             "success", 0,
+             "error", "failed to parse mode pref"
+              ),json_print_flag));
         return NULL;
     }
 
@@ -2355,8 +2551,11 @@ set_system_selection_preference_input_create (const gchar *str)
             input,
             pref,
             &error)) {
-        g_printerr ("error: couldn't create input data bundle: '%s'\n",
-                    error->message);
+        g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+             "success", 0,
+             "error", "couldn't create input data bundle",
+             "message", error->message
+              ),json_print_flag));
         g_error_free (error);
         qmi_message_nas_set_system_selection_preference_input_unref (input);
         return NULL;
@@ -2366,8 +2565,11 @@ set_system_selection_preference_input_create (const gchar *str)
             input,
             QMI_NAS_CHANGE_DURATION_PERMANENT,
             &error)) {
-        g_printerr ("error: couldn't create input data bundle: '%s'\n",
-                    error->message);
+        g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+             "success", 0,
+             "error", "couldn't create input data bundle",
+             "message", error->message
+              ),json_print_flag));
         g_error_free (error);
         qmi_message_nas_set_system_selection_preference_input_unref (input);
         return NULL;
@@ -2380,8 +2582,11 @@ set_system_selection_preference_input_create (const gchar *str)
                 input,
                 QMI_NAS_GSM_WCDMA_ACQUISITION_ORDER_PREFERENCE_AUTOMATIC,
                 &error)) {
-            g_printerr ("error: couldn't create input data bundle: '%s'\n",
-                        error->message);
+            g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+                 "success", 0,
+                 "error", "couldn't create input data bundle",
+                 "message", error->message
+                 ),json_print_flag));
             g_error_free (error);
             qmi_message_nas_set_system_selection_preference_input_unref (input);
             return NULL;
@@ -2400,22 +2605,33 @@ set_system_selection_preference_ready (QmiClientNas *client,
 
     output = qmi_client_nas_set_system_selection_preference_finish (client, res, &error);
     if (!output) {
-        g_printerr ("error: operation failed: %s\n", error->message);
+        g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+             "success", 0,
+             "error", "operation failed",
+             "message", error->message
+              ),json_print_flag));
         g_error_free (error);
         shutdown (FALSE);
         return;
     }
 
     if (!qmi_message_nas_set_system_selection_preference_output_get_result (output, &error)) {
-        g_printerr ("error: couldn't set operating mode: %s\n", error->message);
+        g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+             "success", 0,
+             "error", "couldn't set operating mode",
+             "message", error->message
+              ),json_print_flag));
         g_error_free (error);
         qmi_message_nas_set_system_selection_preference_output_unref (output);
         shutdown (FALSE);
         return;
     }
 
-    g_print ("[%s] System selection preference set successfully; replug your device.\n",
-             qmi_device_get_path_display (ctx->device));
+    g_print ("%s\n", json_dumps(json_pack("{sbsssb}",
+             "success", 1,
+             "device", qmi_device_get_path_display (ctx->device),
+             "reset required", 1
+              ),json_print_flag));
 
     qmi_message_nas_set_system_selection_preference_output_unref (output);
     shutdown (TRUE);
@@ -2428,25 +2644,37 @@ network_scan_ready (QmiClientNas *client,
     QmiMessageNasNetworkScanOutput *output;
     GError *error = NULL;
     GArray *array;
+    json_t *json_output;
 
     output = qmi_client_nas_network_scan_finish (client, res, &error);
     if (!output) {
-        g_printerr ("error: operation failed: %s\n", error->message);
+        g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+             "success", 0,
+             "error", "operation failed",
+             "message", error->message
+              ),json_print_flag));
         g_error_free (error);
         shutdown (FALSE);
         return;
     }
 
     if (!qmi_message_nas_network_scan_output_get_result (output, &error)) {
-        g_printerr ("error: couldn't scan networks: %s\n", error->message);
+        g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+             "success", 0,
+             "error", "couldn't scan networks",
+             "message", error->message
+              ),json_print_flag));
         g_error_free (error);
         qmi_message_nas_network_scan_output_unref (output);
         shutdown (FALSE);
         return;
     }
 
-    g_print ("[%s] Successfully scanned networks\n",
-             qmi_device_get_path_display (ctx->device));
+    json_output = json_pack("{sbsss{}}",
+             "success", 1,
+             "device", qmi_device_get_path_display (ctx->device),
+             "network"
+              );
 
     array = NULL;
     if (qmi_message_nas_network_scan_output_get_network_information (output, &array, NULL)) {
@@ -2455,19 +2683,18 @@ network_scan_ready (QmiClientNas *client,
         for (i = 0; i < array->len; i++) {
             QmiMessageNasNetworkScanOutputNetworkInformationElement *element;
             gchar *status_str;
+            gchar itostr[22];
 
             element = &g_array_index (array, QmiMessageNasNetworkScanOutputNetworkInformationElement, i);
             status_str = qmi_nas_network_status_build_string_from_mask (element->network_status);
-            g_print ("Network [%u]:\n"
-                     "\tMCC: '%" G_GUINT16_FORMAT"'\n"
-                     "\tMNC: '%" G_GUINT16_FORMAT"'\n"
-                     "\tStatus: '%s'\n"
-                     "\tDescription: '%s'\n",
-                     i,
-                     element->mcc,
-                     element->mnc,
-                     status_str,
-                     element->description);
+            g_snprintf(itostr,21,"%d",i);
+            json_object_update(json_object_get(json_output,"network"),json_pack("{s{sisissss}}",
+                        itostr,
+                                "mcc", element->mcc,
+                                "mnc", element->mnc,
+                                "status", status_str,
+                                "description", element->description
+                        ));
             g_free (status_str);
         }
     }
@@ -2475,40 +2702,40 @@ network_scan_ready (QmiClientNas *client,
     array = NULL;
     if (qmi_message_nas_network_scan_output_get_radio_access_technology (output, &array, NULL)) {
         guint i;
+        gchar itostr[22];
 
         for (i = 0; i < array->len; i++) {
             QmiMessageNasNetworkScanOutputRadioAccessTechnologyElement *element;
 
             element = &g_array_index (array, QmiMessageNasNetworkScanOutputRadioAccessTechnologyElement, i);
-            g_print ("Network [%u]:\n"
-                     "\tMCC: '%" G_GUINT16_FORMAT"'\n"
-                     "\tMNC: '%" G_GUINT16_FORMAT"'\n"
-                     "\tRAT: '%s'\n",
-                     i,
-                     element->mcc,
-                     element->mnc,
-                     qmi_nas_radio_interface_get_string (element->radio_interface));
+            g_snprintf(itostr,21,"%d",i);
+            json_object_update(json_object_get(json_object_get(json_output,"network"),itostr),json_pack("{sisiss}",
+                        "mcc", element->mcc,
+                        "mnc", element->mnc,
+                        "rat", qmi_nas_radio_interface_get_string (element->radio_interface)
+                        ));
         }
     }
 
     array = NULL;
     if (qmi_message_nas_network_scan_output_get_mnc_pcs_digit_include_status (output, &array, NULL)) {
         guint i;
+        gchar itostr[22];
 
         for (i = 0; i < array->len; i++) {
             QmiMessageNasNetworkScanOutputMncPcsDigitIncludeStatusElement *element;
 
             element = &g_array_index (array, QmiMessageNasNetworkScanOutputMncPcsDigitIncludeStatusElement, i);
-            g_print ("Network [%u]:\n"
-                     "\tMCC: '%" G_GUINT16_FORMAT"'\n"
-                     "\tMNC: '%" G_GUINT16_FORMAT"'\n"
-                     "\tMCC with PCS digit: '%s'\n",
-                     i,
-                     element->mcc,
-                     element->mnc,
-                     element->includes_pcs_digit ? "yes" : "no");
+            g_snprintf(itostr,21,"%d",i);
+            json_object_update(json_object_get(json_object_get(json_output,"network"),itostr),json_pack("{sisisb}",
+                        "mcc", element->mcc,
+                        "mnc", element->mnc,
+                        "mcc with pcs digit", element->includes_pcs_digit
+                        ));
         }
     }
+    g_print ("%s\n", json_dumps(json_output,json_print_flag));
+    free(json_output);
 
     qmi_message_nas_network_scan_output_unref (output);
     shutdown (TRUE);
@@ -2523,22 +2750,32 @@ reset_ready (QmiClientNas *client,
 
     output = qmi_client_nas_reset_finish (client, res, &error);
     if (!output) {
-        g_printerr ("error: operation failed: %s\n", error->message);
+        g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+             "success", 0,
+             "error", "operation failed",
+             "message", error->message
+              ),json_print_flag));
         g_error_free (error);
         shutdown (FALSE);
         return;
     }
 
     if (!qmi_message_nas_reset_output_get_result (output, &error)) {
-        g_printerr ("error: couldn't reset the NAS service: %s\n", error->message);
+        g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+             "success", 0,
+             "error", "couldn't reset the nas service",
+             "message", error->message
+              ),json_print_flag));
         g_error_free (error);
         qmi_message_nas_reset_output_unref (output);
         shutdown (FALSE);
         return;
     }
 
-    g_print ("[%s] Successfully performed NAS service reset\n",
-             qmi_device_get_path_display (ctx->device));
+    g_print ("%s\n", json_dumps(json_pack("{sbss}",
+             "success", 1,
+             "device", qmi_device_get_path_display (ctx->device)
+              ),json_print_flag));
 
     qmi_message_nas_reset_output_unref (output);
     shutdown (TRUE);

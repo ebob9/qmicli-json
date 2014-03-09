@@ -201,7 +201,7 @@ print_version_and_exit (void)
             "program_name", PROGRAM_NAME,
             "program_version", PROGRAM_VERSION,
             "copyright", "Copyright (2012) Aleksander Morgado\n",
-            "license", "License GPLv2+: GNU GPL version 2 or later <http://gnu.org/licenses/gpl-2.0.html>\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n"
+            "license", "License GPLv2+: GNU GPL version 2 or later <http://gnu.org/licenses/gpl-2.0.html>. This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law."
              ),json_print_flag));
     exit (EXIT_SUCCESS);
 }
@@ -240,7 +240,11 @@ release_client_ready (QmiDevice *dev,
     GError *error = NULL;
 
     if (!qmi_device_release_client_finish (dev, res, &error)) {
-        g_printerr ("error: couldn't release client: %s", error->message);
+        g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+             "success", 0,
+             "error", "couldn't release client",
+             "message", error->message
+              ),json_print_flag));
         g_error_free (error);
     } else
         g_debug ("Client released");
@@ -294,9 +298,12 @@ allocate_client_ready (QmiDevice *dev,
 
     client = qmi_device_allocate_client_finish (dev, res, &error);
     if (!client) {
-        g_printerr ("error: couldn't create client for the '%s' service: %s\n",
-                    qmi_service_get_string (service),
-                    error->message);
+        g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+             "success", 0,
+             "error", "couldn't create client for the service",
+             "message", error->message,
+             "service", qmi_service_get_string (service)
+              ),json_print_flag));
         exit (EXIT_FAILURE);
     }
 
@@ -332,8 +339,11 @@ device_allocate_client (QmiDevice *dev)
 
         cid32 = atoi (client_cid_str);
         if (!cid32 || cid32 > G_MAXUINT8) {
-            g_printerr ("error: invalid CID given '%s'\n",
-                        client_cid_str);
+        g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+             "success", 0,
+             "error", "invalid cid given",
+             "message", client_cid_str
+              ),json_print_flag));
             exit (EXIT_FAILURE);
         }
 
@@ -360,8 +370,11 @@ set_instance_id_ready (QmiDevice *dev,
     guint16 link_id;
 
     if (!qmi_device_set_instance_id_finish (dev, res, &link_id, &error)) {
-        g_printerr ("error: couldn't set instance ID: %s\n",
-                    error->message);
+        g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+             "success", 0,
+             "error", "couldn't set instance id",
+             "message", error->message
+              ),json_print_flag));
         exit (EXIT_FAILURE);
     }
 
@@ -384,12 +397,19 @@ device_set_instance_id (QmiDevice *dev)
     else {
         instance_id = atoi (device_set_instance_id_str);
         if (instance_id == 0) {
-            g_printerr ("error: invalid instance ID given: '%s'\n", device_set_instance_id_str);
+            g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+               "success", 0,
+               "error", "invalid instance id given",
+               "message", device_set_instance_id_str
+               ),json_print_flag));
             exit (EXIT_FAILURE);
         } else if (instance_id < 0 || instance_id > G_MAXUINT8) {
-            g_printerr ("error: given instance ID is out of range [0,%u]: '%s'\n",
-                        G_MAXUINT8,
-                        device_set_instance_id_str);
+            g_print ("%s\n", json_dumps(json_pack("{sbsssssi}",
+                        "success", 0,
+                        "error", "given instance id is out of range",
+                        "message", device_set_instance_id_str,
+                        "max", G_MAXUINT8
+                        ),json_print_flag));
             exit (EXIT_FAILURE);
         }
     }
@@ -410,33 +430,46 @@ get_service_version_info_ready (QmiDevice *dev,
     GError *error = NULL;
     GArray *services;
     guint i;
+    json_t *json_output;
 
     services = qmi_device_get_service_version_info_finish (dev, res, &error);
     if (!services) {
-        g_printerr ("error: couldn't get service version info: %s\n",
-                    error->message);
+        g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+             "success", 0,
+             "error", "couldn't get service version info",
+             "message", error->message
+              ),json_print_flag));
         exit (EXIT_FAILURE);
     }
 
-    g_print ("[%s] Supported versions:\n",
-             qmi_device_get_path_display (dev));
+    json_output = json_pack("{sbss}",
+             "success", 1,
+             "device", qmi_device_get_path_display (dev)
+              );
     for (i = 0; i < services->len; i++) {
         QmiDeviceServiceVersionInfo *info;
         const gchar *service_str;
+        gchar unknownhex[15];
 
         info = &g_array_index (services, QmiDeviceServiceVersionInfo, i);
         service_str = qmi_service_get_string (info->service);
         if (service_str)
-            g_print ("\t%s (%u.%u)\n",
+            json_object_update(json_output,json_pack("{s{sisi}}",
                      service_str,
-                     info->major_version,
-                     info->minor_version);
-        else
-            g_print ("\tunknown [0x%02x] (%u.%u)\n",
-                     info->service,
-                     info->major_version,
-                     info->minor_version);
+                                "major", info->major_version,
+                                "minor", info->minor_version
+                     ));
+        else {
+            g_snprintf(unknownhex,14,"unknown 0x%02x", info->service);
+            json_object_update(json_output,json_pack("s{sisi}",
+                     unknownhex,
+                                "major", info->major_version,
+                                "minor", info->minor_version
+                     ));
+        }
     }
+    g_print ("%s\n", json_dumps(json_output,json_print_flag));
+    free(json_output);
     g_array_unref (services);
 
     /* We're done now */
@@ -593,16 +626,16 @@ int main (int argc, char **argv)
 
     /* Setup option context, process it and destroy it */
     context = g_option_context_new ("- Control QMI devices");
-	g_option_context_add_group (context,
-	                            qmicli_dms_get_option_group ());
-	g_option_context_add_group (context,
-	                            qmicli_nas_get_option_group ());
-	g_option_context_add_group (context,
-	                            qmicli_wds_get_option_group ());
-	g_option_context_add_group (context,
-	                            qmicli_pbm_get_option_group ());
-	g_option_context_add_group (context,
-	                            qmicli_uim_get_option_group ());
+        g_option_context_add_group (context,
+                                    qmicli_dms_get_option_group ());
+        g_option_context_add_group (context,
+                                    qmicli_nas_get_option_group ());
+        g_option_context_add_group (context,
+                                    qmicli_wds_get_option_group ());
+        g_option_context_add_group (context,
+                                    qmicli_pbm_get_option_group ());
+        g_option_context_add_group (context,
+                                    qmicli_uim_get_option_group ());
     g_option_context_add_main_entries (context, main_entries, NULL);
     if (!g_option_context_parse (context, &argc, &argv, &error)) {
         g_print ("%s\n", json_dumps(json_pack("{sbss}",
@@ -611,7 +644,7 @@ int main (int argc, char **argv)
               ),JSON_PRESERVE_ORDER + JSON_INDENT(4)));
         exit (EXIT_FAILURE);
     }
-	g_option_context_free (context);
+        g_option_context_free (context);
 
     if (json_flag)
         json_print_flag = JSON_PRESERVE_ORDER + JSON_COMPACT;
@@ -626,7 +659,6 @@ int main (int argc, char **argv)
 
     /* No device path given? */
     if (!device_str) {
-        //g_printerr ("error: no device path specified\n");
         g_print ("%s\n", json_dumps(json_pack("{sbss}",
              "success", 0,
              "error", "no device path specified"
