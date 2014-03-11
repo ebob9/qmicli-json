@@ -27,6 +27,7 @@
 
 /* JSON printing flag */
 extern size_t json_print_flag;
+extern const char *JSON_OUTPUT_ERROR;
 
 /* Common */
 void          qmicli_async_operation_done  (gboolean operation_status);

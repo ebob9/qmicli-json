@@ -5,7 +5,7 @@ List of things left for later:
 
 Short Term: 
 
- * Finish conversion (qmicli.c 98%, qmicli-nas 100%, rest currently 0%).
+ * Finish conversion (qmicli.c 98%, qmicli-nas 100%, qmicli-uim 100%, qmicli-pbm 100%, rest currently 0%).
 
  * Fix/verify type casts (ex: G_GUINT16 to Jansson "i").
 
@@ -16,6 +16,8 @@ Short Term:
 Long Term:
 
  * Figure out how to handle async error/output situations.
+
+ * Detect null values and handle before passing to json_pack.
 
  * JSON imput support from stdin instead of switches.
 

@@ -70,16 +70,16 @@ static GOptionEntry entries[] = {
 GOptionGroup *
 qmicli_uim_get_option_group (void)
 {
-	GOptionGroup *group;
+        GOptionGroup *group;
 
-	group = g_option_group_new ("uim",
-	                            "UIM options",
-	                            "Show User Identity Module options",
-	                            NULL,
-	                            NULL);
-	g_option_group_add_entries (group, entries);
+        group = g_option_group_new ("uim",
+                                    "UIM options",
+                                    "Show User Identity Module options",
+                                    NULL,
+                                    NULL);
+        g_option_group_add_entries (group, entries);
 
-	return group;
+        return group;
 }
 
 gboolean
@@ -97,7 +97,10 @@ qmicli_uim_options_enabled (void)
                  noop_flag);
 
     if (n_actions > 1) {
-        g_printerr ("error: too many UIM actions requested\n");
+        g_print ("%s\n", json_dumps(json_pack("{sbss}",
+             "success", 0,
+             "error", "too many uim actions requested"
+              ),json_print_flag));
         exit (EXIT_FAILURE);
     }
 
@@ -135,22 +138,33 @@ reset_ready (QmiClientUim *client,
 
     output = qmi_client_uim_reset_finish (client, res, &error);
     if (!output) {
-        g_printerr ("error: operation failed: %s\n", error->message);
+        g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+             "success", 0,
+             "error", "operation failed",
+             "message", error->message
+              ),json_print_flag));
         g_error_free (error);
         shutdown (FALSE);
         return;
     }
 
     if (!qmi_message_uim_reset_output_get_result (output, &error)) {
-        g_printerr ("error: couldn't reset the UIM service: %s\n", error->message);
+        g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+             "success", 0,
+             "error", "couldn't reset the uim service",
+             "message", error->message
+              ),json_print_flag));
         g_error_free (error);
         qmi_message_uim_reset_output_unref (output);
         shutdown (FALSE);
         return;
     }
 
-    g_print ("[%s] Successfully performed UIM service reset\n",
-             qmi_device_get_path_display (ctx->device));
+    g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+             "success", 1,
+             "device", qmi_device_get_path_display (ctx->device),
+             "message", "successfully performed uim service reset"
+              ),json_print_flag));
 
     qmi_message_uim_reset_output_unref (output);
     shutdown (TRUE);
@@ -173,7 +187,11 @@ get_sim_file_id_and_path (const gchar *file_path_str,
 
     split = g_strsplit (file_path_str, ",", -1);
     if (!split) {
-        g_printerr ("error: invalid file path given: '%s'\n", file_path_str);
+        g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+             "success", 0,
+             "error", "invalid file path given",
+             "message", file_path_str
+              ),json_print_flag));
         return FALSE;
     }
 
@@ -206,7 +224,11 @@ get_sim_file_id_and_path (const gchar *file_path_str,
 
     if (*file_id == 0) {
         g_array_unref (*file_path);
-        g_printerr ("error: invalid file path given: '%s'\n", file_path_str);
+        g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+             "success", 0,
+             "error", "invalid file path given",
+             "message", file_path_str
+              ),json_print_flag));
         return FALSE;
     }
 
@@ -222,17 +244,27 @@ read_transparent_ready (QmiClientUim *client,
     guint8 sw1 = 0;
     guint8 sw2 = 0;
     GArray *read_result = NULL;
+    json_t *json_output;
 
     output = qmi_client_uim_read_transparent_finish (client, res, &error);
     if (!output) {
-        g_printerr ("error: operation failed: %s\n", error->message);
+        g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+             "success", 0,
+             "error", "operation failed",
+             "message", error->message
+              ),json_print_flag));
         g_error_free (error);
         shutdown (FALSE);
         return;
     }
 
     if (!qmi_message_uim_read_transparent_output_get_result (output, &error)) {
-        g_printerr ("error: couldn't read transparent file from the UIM: %s\n", error->message);
+
+        json_output = json_pack("{sbssss}",
+             "success", 0,
+             "error", "couldn't read transparent file from the uim",
+             "message", error->message
+              );
         g_error_free (error);
 
         /* Card result */
@@ -241,19 +273,29 @@ read_transparent_ready (QmiClientUim *client,
                 &sw1,
                 &sw2,
                 NULL)) {
-            g_print ("Card result:\n"
-                     "\tSW1: '0x%02x'\n"
-                     "\tSW2: '0x%02x'\n",
-                     sw1, sw2);
+            gchar sw1result[6];
+            gchar sw2result[6];
+
+            g_snprintf(sw1result,5,"0x%02x",sw1);
+            g_snprintf(sw2result,5,"0x%02x",sw2);
+            json_object_update(json_output, json_pack("{s{ssss}}",
+                 "card result",
+                         "sw1", sw1result,
+                         "sw2", sw2result
+                 ));
         }
+
+        g_print ("%s\n", json_dumps(json_output,json_print_flag) ? : JSON_OUTPUT_ERROR);
+        g_free(json_output);
 
         qmi_message_uim_read_transparent_output_unref (output);
         shutdown (FALSE);
         return;
     }
-
-    g_print ("[%s] Successfully read information from the UIM:\n",
-             qmi_device_get_path_display (ctx->device));
+    json_output = json_pack("{sbss}",
+             "success", 1,
+             "device", qmi_device_get_path_display (ctx->device)
+              );
 
     /* Card result */
     if (qmi_message_uim_read_transparent_output_get_card_result (
@@ -261,10 +303,16 @@ read_transparent_ready (QmiClientUim *client,
             &sw1,
             &sw2,
             NULL)) {
-        g_print ("Card result:\n"
-                 "\tSW1: '0x%02x'\n"
-                 "\tSW2: '0x%02x'\n",
-                 sw1, sw2);
+            gchar sw1result[6];
+            gchar sw2result[6];
+
+            g_snprintf(sw1result,5,"0x%02x",sw1);
+            g_snprintf(sw2result,5,"0x%02x",sw2);
+            json_object_update(json_output, json_pack("{s{ssss}}",
+                 "card result",
+                         "sw1", sw1result,
+                         "sw2", sw2result
+                 ));
     }
 
     /* Read result */
@@ -274,12 +322,15 @@ read_transparent_ready (QmiClientUim *client,
             NULL)) {
         gchar *str;
 
-        str = qmicli_get_raw_data_printable (read_result, 80, "\t");
-        g_print ("Read result:\n"
-                 "%s\n",
-                 str);
+        str = qmicli_get_raw_data_printable (read_result, 80, "");
+        json_object_update(json_output, json_pack("{ss}",
+                 "read result", str
+                 ));
         g_free (str);
     }
+
+    g_print ("%s\n", json_dumps(json_output,json_print_flag) ? : JSON_OUTPUT_ERROR);
+    g_free(json_output);
 
     qmi_message_uim_read_transparent_output_unref (output);
     shutdown (TRUE);
@@ -336,10 +387,15 @@ get_file_attributes_ready (QmiClientUim *client,
     QmiUimSecurityAttributeLogic activate_security_attributes_logic;
     QmiUimSecurityAttribute activate_security_attributes;
     GArray *raw = NULL;
+    json_t *json_output;
 
     output = qmi_client_uim_get_file_attributes_finish (client, res, &error);
     if (!output) {
-        g_printerr ("error: operation failed: %s\n", error->message);
+        g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+             "success", 0,
+             "error", "operation failed",
+             "message", error->message
+              ),json_print_flag));
         g_error_free (error);
         shutdown (FALSE);
         g_free (file_name);
@@ -347,9 +403,12 @@ get_file_attributes_ready (QmiClientUim *client,
     }
 
     if (!qmi_message_uim_get_file_attributes_output_get_result (output, &error)) {
-        g_printerr ("error: couldn't get '%s' file attributes from the UIM: %s\n",
-                    file_name,
-                    error->message);
+        json_output = json_pack("{sbssssss}",
+             "success", 0,
+             "error", "couldn't get file attributes from the uim",
+             "message", error->message,
+             "file name", file_name
+              );
         g_error_free (error);
 
         /* Card result */
@@ -358,11 +417,20 @@ get_file_attributes_ready (QmiClientUim *client,
                 &sw1,
                 &sw2,
                 NULL)) {
-            g_print ("Card result:\n"
-                     "\tSW1: '0x%02x'\n"
-                     "\tSW2: '0x%02x'\n",
-                     sw1, sw2);
+            gchar sw1result[6];
+            gchar sw2result[6];
+
+            g_snprintf(sw1result,5,"0x%02x",sw1);
+            g_snprintf(sw2result,5,"0x%02x",sw2);
+            json_object_update(json_output, json_pack("{s{ssss}}",
+                 "card result",
+                         "sw1", sw1result,
+                         "sw2", sw2result
+                 ));
         }
+
+        g_print ("%s\n", json_dumps(json_output,json_print_flag) ? : JSON_OUTPUT_ERROR);
+        g_free(json_output);
 
         qmi_message_uim_get_file_attributes_output_unref (output);
         shutdown (FALSE);
@@ -370,9 +438,11 @@ get_file_attributes_ready (QmiClientUim *client,
         return;
     }
 
-    g_print ("[%s] Successfully got file '%s' attributes from the UIM:\n",
-             file_name,
-             qmi_device_get_path_display (ctx->device));
+    json_output = json_pack("{sbssss}",
+             "success", 1,
+             "device", qmi_device_get_path_display (ctx->device),
+             "file name", file_name ? : "(null)"
+              );
 
     /* Card result */
     if (qmi_message_uim_get_file_attributes_output_get_card_result (
@@ -380,10 +450,16 @@ get_file_attributes_ready (QmiClientUim *client,
             &sw1,
             &sw2,
             NULL)) {
-        g_print ("Card result:\n"
-                 "\tSW1: '0x%02x'\n"
-                 "\tSW2: '0x%02x'\n",
-                 sw1, sw2);
+            gchar sw1result[6];
+            gchar sw2result[6];
+
+            g_snprintf(sw1result,5,"0x%02x",sw1);
+            g_snprintf(sw2result,5,"0x%02x",sw2);
+            json_object_update(json_output, json_pack("{s{ssss}}",
+                 "card result",
+                         "sw1", sw1result,
+                         "sw2", sw2result
+                 ));
     }
 
     /* File attributes */
@@ -408,47 +484,79 @@ get_file_attributes_ready (QmiClientUim *client,
             NULL)) {
         gchar *str;
 
-        g_print ("File attributes:\n");
-        g_print ("\tFile size: %u\n", (guint)file_size);
-        g_print ("\tFile ID: %u\n", (guint)file_id);
-        g_print ("\tFile type: %s\n", qmi_uim_file_type_get_string (file_type));
-        g_print ("\tRecord size: %u\n", (guint)record_size);
-        g_print ("\tRecord count: %u\n", (guint)record_count);
+        json_object_update(json_output, json_pack("{s{}}",
+                 "file attributes"
+                 ));
+
+        json_object_update(json_object_get(json_output,"file attributes"), json_pack("{si}",
+                 "file size", (guint)file_size
+                 ));
+
+        json_object_update(json_object_get(json_output,"file attributes"), json_pack("{si}",
+                 "file id", (guint)file_id
+                 ));
+
+        json_object_update(json_object_get(json_output,"file attributes"), json_pack("{ss}",
+                 "file type", qmi_uim_file_type_get_string (file_type)
+                 ));
+
+        json_object_update(json_object_get(json_output,"file attributes"), json_pack("{si}",
+                 "record size", (guint)record_size
+                 ));
+
+        json_object_update(json_object_get(json_output,"file attributes"), json_pack("{si}",
+                 "record count", (guint)record_count
+                 ));
 
         str = qmi_uim_security_attribute_build_string_from_mask (read_security_attributes);
-        g_print ("\tRead security attributes: (%s) %s\n",
-                 qmi_uim_security_attribute_logic_get_string (read_security_attributes_logic),
-                 str);
+        json_object_update(json_object_get(json_output,"file attributes"), json_pack("{s{ssss}}",
+                 "read security",
+                           "logic", qmi_uim_security_attribute_logic_get_string (read_security_attributes_logic),
+                           "attributes", str ? : "(null)"
+                 ));
         g_free (str);
 
         str = qmi_uim_security_attribute_build_string_from_mask (write_security_attributes);
-        g_print ("\tWrite security attributes: (%s) %s\n",
-                 qmi_uim_security_attribute_logic_get_string (write_security_attributes_logic),
-                 str);
+        json_object_update(json_object_get(json_output,"file attributes"), json_pack("{s{ssss}}",
+                 "write security",
+                           "logic", qmi_uim_security_attribute_logic_get_string (write_security_attributes_logic),
+                           "attributes", str ? : "(null)"
+                 ));
         g_free (str);
 
         str = qmi_uim_security_attribute_build_string_from_mask (increase_security_attributes);
-        g_print ("\tIncrease security attributes: (%s) %s\n",
-                 qmi_uim_security_attribute_logic_get_string (increase_security_attributes_logic),
-                 str);
+        json_object_update(json_object_get(json_output,"file attributes"), json_pack("{s{ssss}}",
+                 "increase security",
+                           "logic", qmi_uim_security_attribute_logic_get_string (increase_security_attributes_logic),
+                           "attributes", str ? : "(null)"
+                 ));
         g_free (str);
 
         str = qmi_uim_security_attribute_build_string_from_mask (deactivate_security_attributes);
-        g_print ("\tDeactivate security attributes: (%s) %s\n",
-                 qmi_uim_security_attribute_logic_get_string (deactivate_security_attributes_logic),
-                 str);
+        json_object_update(json_object_get(json_output,"file attributes"), json_pack("{s{ssss}}",
+                 "deactivate security",
+                           "logic", qmi_uim_security_attribute_logic_get_string (deactivate_security_attributes_logic),
+                           "attributes", str ? : "(null)"
+                 ));
         g_free (str);
 
         str = qmi_uim_security_attribute_build_string_from_mask (activate_security_attributes);
-        g_print ("\tActivate security attributes: (%s) %s\n",
-                 qmi_uim_security_attribute_logic_get_string (activate_security_attributes_logic),
-                 str);
+        json_object_update(json_object_get(json_output,"file attributes"), json_pack("{s{ssss}}",
+                 "activate security",
+                           "logic", qmi_uim_security_attribute_logic_get_string (activate_security_attributes_logic),
+                           "attributes", str ? : "(null)"
+                 ));
         g_free (str);
 
-        str = qmicli_get_raw_data_printable (raw, 80, "\t");
-        g_print ("\tRaw: %s\n", str);
+        str = qmicli_get_raw_data_printable (raw, 80, "");
+        json_object_update(json_output, json_pack("{ss}",
+                 "raw", str
+                 ));
         g_free (str);
     }
+
+    g_print ("%s\n", json_dumps(json_output,json_print_flag) ? : JSON_OUTPUT_ERROR);
+    g_free(json_output);
 
     qmi_message_uim_get_file_attributes_output_unref (output);
     shutdown (TRUE);

@@ -60,6 +60,7 @@ static gboolean client_no_release_cid_flag;
 static gboolean verbose_flag;
 static gboolean json_flag;
 size_t json_print_flag = JSON_PRESERVE_ORDER + JSON_INDENT(4);
+const char *JSON_OUTPUT_ERROR = "{\n    \"success\": false,\n    \"error\": \"internal error: unable to build json object\"\n}";
 static gboolean silent_flag;
 static gboolean version_flag;
 
@@ -468,8 +469,8 @@ get_service_version_info_ready (QmiDevice *dev,
                      ));
         }
     }
-    g_print ("%s\n", json_dumps(json_output,json_print_flag));
-    free(json_output);
+    g_print ("%s\n", json_dumps(json_output,json_print_flag) ? : JSON_OUTPUT_ERROR);
+    g_free(json_output);
     g_array_unref (services);
 
     /* We're done now */

@@ -325,8 +325,8 @@ get_signal_info_ready (QmiClientNas *client,
             ));
     }
 
-    g_print ("%s\n", json_dumps(json_output,json_print_flag));
-    free(json_output);
+    g_print ("%s\n", json_dumps(json_output,json_print_flag) ? : JSON_OUTPUT_ERROR);
+    g_free(json_output);
 
     qmi_message_nas_get_signal_info_output_unref (output);
     shutdown (TRUE);
@@ -521,8 +521,8 @@ get_signal_strength_ready (QmiClientNas *client,
 
     /* Just skip others for now */
 
-    g_print ("%s\n", json_dumps(json_output,json_print_flag));
-    free(json_output);
+    g_print ("%s\n", json_dumps(json_output,json_print_flag) ? : JSON_OUTPUT_ERROR);
+    g_free(json_output);
 
     qmi_message_nas_get_signal_strength_output_unref (output);
     shutdown (TRUE);
@@ -708,8 +708,8 @@ get_tx_rx_info_ready (QmiClientNas *client,
         }
     }
 
-    g_print ("%s\n", json_dumps(json_output,json_print_flag));
-    free(json_output);
+    g_print ("%s\n", json_dumps(json_output,json_print_flag) ? : JSON_OUTPUT_ERROR);
+    g_free(json_output);
 
     qmi_message_nas_get_tx_rx_info_output_unref (output);
     shutdown (TRUE);
@@ -843,8 +843,8 @@ get_home_network_ready (QmiClientNas *client,
         }
     }
 
-    g_print ("%s\n", json_dumps(json_output,json_print_flag));
-    free(json_output);
+    g_print ("%s\n", json_dumps(json_output,json_print_flag) ? : JSON_OUTPUT_ERROR);
+    g_free(json_output);
 
     qmi_message_nas_get_home_network_output_unref (output);
     shutdown (TRUE);
@@ -1311,8 +1311,8 @@ get_serving_system_ready (QmiClientNas *client,
         }
     }
 
-    g_print ("%s\n", json_dumps(json_output, json_print_flag));
-    free(json_output);
+    g_print ("%s\n", json_dumps(json_output, json_print_flag) ? : JSON_OUTPUT_ERROR);
+    g_free(json_output);
 
     qmi_message_nas_get_serving_system_output_unref (output);
     shutdown (TRUE);
@@ -2273,8 +2273,8 @@ get_system_info_ready (QmiClientNas *client,
         }
     }
 
-    g_print ("%s\n", json_dumps(json_output,json_print_flag));
-    free(json_output);
+    g_print ("%s\n", json_dumps(json_output,json_print_flag) ? : JSON_OUTPUT_ERROR);
+    g_free(json_output);
 
     qmi_message_nas_get_system_info_output_unref (output);
     shutdown (TRUE);
@@ -2343,8 +2343,8 @@ get_technology_preference_ready (QmiClientNas *client,
         g_free (preference_string);
     }
 
-    g_print ("%s\n", json_dumps(json_output,json_print_flag));
-    free(json_output);
+    g_print ("%s\n", json_dumps(json_output,json_print_flag) ? : JSON_OUTPUT_ERROR);
+    g_free(json_output);
 
     qmi_message_nas_get_technology_preference_output_unref (output);
     shutdown (TRUE);
@@ -2524,8 +2524,8 @@ get_system_selection_preference_ready (QmiClientNas *client,
              ));
     }
 
-    g_print ("%s\n", json_dumps(json_output,json_print_flag));
-    free(json_output);
+    g_print ("%s\n", json_dumps(json_output,json_print_flag) ? : JSON_OUTPUT_ERROR);
+    g_free(json_output);
 
     qmi_message_nas_get_system_selection_preference_output_unref (output);
     shutdown (TRUE);
@@ -2734,8 +2734,8 @@ network_scan_ready (QmiClientNas *client,
                         ));
         }
     }
-    g_print ("%s\n", json_dumps(json_output,json_print_flag));
-    free(json_output);
+    g_print ("%s\n", json_dumps(json_output,json_print_flag) ? : JSON_OUTPUT_ERROR);
+    g_free(json_output);
 
     qmi_message_nas_network_scan_output_unref (output);
     shutdown (TRUE);
@@ -2772,9 +2772,10 @@ reset_ready (QmiClientNas *client,
         return;
     }
 
-    g_print ("%s\n", json_dumps(json_pack("{sbss}",
+    g_print ("%s\n", json_dumps(json_pack("{sbssss}",
              "success", 1,
-             "device", qmi_device_get_path_display (ctx->device)
+             "device", qmi_device_get_path_display (ctx->device),
+             "message", "successfully performed nas service reset"
               ),json_print_flag));
 
     qmi_message_nas_reset_output_unref (output);
