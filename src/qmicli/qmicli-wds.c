@@ -142,15 +142,17 @@ qmicli_wds_options_enabled (void)
                  noop_flag);
 
     if (n_actions > 1) {
-        g_printerr ("error: too many WDS actions requested\n");
-        g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+        g_print ("%s\n", json_dumps(json_pack("{sbss}",
              "success", 0,
              "error", "too many wds actions requested"
               ),json_print_flag));
         exit (EXIT_FAILURE);
     } else if (n_actions == 0 &&
                follow_network_flag) {
-        g_printerr ("error: `--wds-follow-network' must be used with `--wds-start-network'\n");
+        g_print ("%s\n", json_dumps(json_pack("{sbss}",
+             "success", 0,
+             "error", "--wds-follow-network must be used with --wds-start-network"
+              ),json_print_flag));
         exit (EXIT_FAILURE);
     }
 
@@ -192,8 +194,6 @@ stop_network_ready (QmiClientWds *client,
 
     output = qmi_client_wds_stop_network_finish (client, res, &error);
     if (!output) {
-        g_printerr ("error: operation failed: %s\n",
-                    error->message);
         g_print ("%s\n", json_dumps(json_pack("{sbssss}",
              "success", 0,
              "error", "operation failed",
@@ -205,7 +205,6 @@ stop_network_ready (QmiClientWds *client,
     }
 
     if (!qmi_message_wds_stop_network_output_get_result (output, &error)) {
-        g_printerr ("error: couldn't stop network: %s\n", error->message);
         g_print ("%s\n", json_dumps(json_pack("{sbssss}",
              "success", 0,
              "error", "couldn't stop network",
@@ -220,8 +219,6 @@ stop_network_ready (QmiClientWds *client,
 #undef VALIDATE_UNKNOWN
 #define VALIDATE_UNKNOWN(str) (str ? str : "unknown")
 
-    g_print ("[%s] Network stopped\n",
-             qmi_device_get_path_display (ctx->device));
     g_print ("%s\n", json_dumps(json_pack("{sbssss}",
              "success", 1,
              "device", qmi_device_get_path_display (ctx->device),
@@ -266,7 +263,6 @@ network_cancelled (GCancellable *cancellable)
         ctx->packet_status_timeout_id = 0;
     }
 
-    g_print ("Network cancelled... releasing resources\n");
     g_print ("%s\n", json_dumps(json_pack("{sbss}",
              "success", 1,
              "message", "network concelled, releasing resources"
@@ -285,8 +281,6 @@ timeout_get_packet_service_status_ready (QmiClientWds *client,
 
     output = qmi_client_wds_get_packet_service_status_finish (client, res, &error);
     if (!output) {
-        g_printerr ("error: operation failed: %s\n",
-                    error->message);
         g_print ("%s\n", json_dumps(json_pack("{sbssss}",
              "success", 0,
              "error", "operation failed",
@@ -297,7 +291,6 @@ timeout_get_packet_service_status_ready (QmiClientWds *client,
     }
 
     if (!qmi_message_wds_get_packet_service_status_output_get_result (output, &error)) {
-        g_printerr ("error: couldn't get packet service status: %s\n", error->message);
         g_print ("%s\n", json_dumps(json_pack("{sbssss}",
              "success", 0,
              "error", "couldn't get packet service status",
@@ -313,9 +306,6 @@ timeout_get_packet_service_status_ready (QmiClientWds *client,
         &status,
         NULL);
 
-    g_print ("[%s] Connection status: '%s'\n",
-             qmi_device_get_path_display (ctx->device),
-             qmi_wds_connection_status_get_string (status));
     json_output = json_pack("{sbsssssb}",
              "success", 1,
              "device", qmi_device_get_path_display (ctx->device),
@@ -326,8 +316,6 @@ timeout_get_packet_service_status_ready (QmiClientWds *client,
 
     /* If packet service checks detect disconnection, halt --wds-follow-network */
     if (status != QMI_WDS_CONNECTION_STATUS_CONNECTED) {
-        g_print ("[%s] Stopping after detecting disconnection\n",
-                 qmi_device_get_path_display (ctx->device));
         json_object_update(json_output, json_pack("{sb}",
                 "stopping", 1
                 ));
@@ -372,7 +360,6 @@ start_network_ready (QmiClientWds *client,
     }
 
     if (!qmi_message_wds_start_network_output_get_result (output, &error)) {
-        g_printerr ("error: couldn't start network: %s\n", error->message);
         json_output = json_pack("{sbssss}",
              "success", 0,
              "error", "couldn't start network",
@@ -390,9 +377,6 @@ start_network_ready (QmiClientWds *client,
                     output,
                     &cer,
                     NULL))
-                g_printerr ("call end reason (%u): %s\n",
-                            cer,
-                            qmi_wds_call_end_reason_get_string (cer));
                 json_object_update(json_output, json_pack("{siss}",
                             "call end reason", cer,
                             "call end reason text", qmi_wds_call_end_reason_get_string (cer)
@@ -403,11 +387,6 @@ start_network_ready (QmiClientWds *client,
                     &verbose_cer_type,
                     &verbose_cer_reason,
                     NULL))
-                g_printerr ("verbose call end reason (%u,%d): [%s] %s\n",
-                            verbose_cer_type,
-                            verbose_cer_reason,
-                            qmi_wds_verbose_call_end_reason_type_get_string (verbose_cer_type),
-                            qmi_wds_verbose_call_end_reason_get_string (verbose_cer_type, verbose_cer_reason));
                 json_object_update(json_output, json_pack("{sisssiss}",
                             "verbose call end type", verbose_cer_type,
                             "verbose call end type text", qmi_wds_verbose_call_end_reason_type_get_string (verbose_cer_type),
@@ -431,10 +410,6 @@ start_network_ready (QmiClientWds *client,
 #undef VALIDATE_UNKNOWN
 #define VALIDATE_UNKNOWN(str) (str ? str : "unknown")
 
-    g_print ("[%s] Network started\n"
-             "\tPacket data handle: '%u'\n",
-             qmi_device_get_path_display (ctx->device),
-             (guint)ctx->packet_data_handle);
     json_output = json_pack("{sbsssisb}",
              "success", 1,
              "device", qmi_device_get_path_display (ctx->device),
@@ -443,7 +418,6 @@ start_network_ready (QmiClientWds *client,
              );
 
     if (follow_network_flag) {
-        g_print ("\nCtrl+C will stop the network\n");
         json_object_update(json_output, json_pack("{sb}",
              "break to abort network", 1
              ));
@@ -477,8 +451,6 @@ get_packet_service_status_ready (QmiClientWds *client,
 
     output = qmi_client_wds_get_packet_service_status_finish (client, res, &error);
     if (!output) {
-        g_printerr ("error: operation failed: %s\n",
-                    error->message);
         g_print ("%s\n", json_dumps(json_pack("{sbssss}",
              "success", 0,
              "error", "operation failed",
@@ -490,7 +462,6 @@ get_packet_service_status_ready (QmiClientWds *client,
     }
 
     if (!qmi_message_wds_get_packet_service_status_output_get_result (output, &error)) {
-        g_printerr ("error: couldn't get packet service status: %s\n", error->message);
         g_print ("%s\n", json_dumps(json_pack("{sbssss}",
              "success", 0,
              "error", "couldn't get packet service status",
@@ -507,9 +478,6 @@ get_packet_service_status_ready (QmiClientWds *client,
         &status,
         NULL);
 
-    g_print ("[%s] Connection status: '%s'\n",
-             qmi_device_get_path_display (ctx->device),
-             qmi_wds_connection_status_get_string (status));
     g_print ("%s\n", json_dumps(json_pack("{sbsssssb}",
              "success", 1,
              "device", qmi_device_get_path_display (ctx->device),
@@ -533,8 +501,6 @@ get_packet_statistics_ready (QmiClientWds *client,
 
     output = qmi_client_wds_get_packet_statistics_finish (client, res, &error);
     if (!output) {
-        g_printerr ("error: operation failed: %s\n",
-                    error->message);
         g_print ("%s\n", json_dumps(json_pack("{sbssss}",
              "success", 0,
              "error", "operation failed",
@@ -546,7 +512,6 @@ get_packet_statistics_ready (QmiClientWds *client,
     }
 
     if (!qmi_message_wds_get_packet_statistics_output_get_result (output, &error)) {
-        g_printerr ("error: couldn't get packet statistics: %s\n", error->message);
         g_print ("%s\n", json_dumps(json_pack("{sbssss}",
              "success", 0,
              "error", "couldn't get packet statistics",
@@ -558,8 +523,6 @@ get_packet_statistics_ready (QmiClientWds *client,
         return;
     }
 
-    g_print ("[%s] Connection statistics:\n",
-             qmi_device_get_path_display (ctx->device));
     json_output = json_pack("{sbsss{}}",
              "success", 1,
              "device", qmi_device_get_path_display (ctx->device),
@@ -677,8 +640,6 @@ get_data_bearer_technology_ready (QmiClientWds *client,
 
     output = qmi_client_wds_get_data_bearer_technology_finish (client, res, &error);
     if (!output) {
-        g_printerr ("error: operation failed: %s\n",
-                    error->message);
         g_print ("%s\n", json_dumps(json_pack("{sbssss}",
              "success", 0,
              "error", "operation failed",
@@ -692,7 +653,6 @@ get_data_bearer_technology_ready (QmiClientWds *client,
     if (!qmi_message_wds_get_data_bearer_technology_output_get_result (output, &error)) {
         json_t *json_output;
 
-        g_printerr ("error: couldn't get data bearer technology: %s\n", error->message);
         json_output = json_pack("{sbssss}",
              "success", 0,
              "error", "couldn't get data bearer technology",
@@ -731,9 +691,6 @@ get_data_bearer_technology_ready (QmiClientWds *client,
         output,
         &current,
         NULL);
-    g_print ("[%s] Data bearer technology (current): '%s'\n",
-             qmi_device_get_path_display (ctx->device),
-             qmi_wds_data_bearer_technology_get_string (current));
 
     g_print ("%s\n", json_dumps(json_pack("{sbsss{siss}}",
              "success", 1,
@@ -766,15 +723,6 @@ print_current_data_bearer_technology_results (const gchar *which,
         rat_string = qmi_wds_rat_3gpp_build_string_from_mask (rat_mask);
     }
 
-    g_print ("[%s] Data bearer technology (%s):\n"
-             "              Network type: '%s'\n"
-             "   Radio Access Technology: '%s'\n"
-             "            Service Option: '%s'\n",
-             qmi_device_get_path_display (ctx->device),
-             which,
-             qmi_wds_network_type_get_string (network_type),
-             VALIDATE_UNKNOWN (rat_string),
-             VALIDATE_UNKNOWN (so_string));
     g_print ("%s\n", json_dumps(json_pack("{sbsss{ssssss}}",
              "success", 1,
              "device", qmi_device_get_path_display (ctx->device) ? : "(null)",
@@ -799,8 +747,6 @@ get_current_data_bearer_technology_ready (QmiClientWds *client,
 
     output = qmi_client_wds_get_current_data_bearer_technology_finish (client, res, &error);
     if (!output) {
-        g_printerr ("error: operation failed: %s\n",
-                    error->message);
         g_print ("%s\n", json_dumps(json_pack("{sbssss}",
              "success", 0,
              "error", "operation failed",
@@ -820,7 +766,6 @@ get_current_data_bearer_technology_ready (QmiClientWds *client,
              "error", "couldn't get data bearer technology",
              "message", error->message
               ),json_print_flag));
-        //g_printerr ("error: couldn't get current data bearer technology: %s\n", error->message);
 
         if (qmi_message_wds_get_current_data_bearer_technology_output_get_last (
                 output,
@@ -877,7 +822,6 @@ get_profile_settings_ready (QmiClientWds *client,
 
     output = qmi_client_wds_get_profile_settings_finish (client, res, &error);
     if (!output) {
-        g_printerr ("error: operation failed: %s\n", error->message);
         g_print ("%s\n", json_dumps(json_pack("{sbssss}",
              "success", 0,
              "error", "operation failed",
@@ -894,16 +838,12 @@ get_profile_settings_ready (QmiClientWds *client,
                 output,
                 &ds_profile_error,
                 NULL)) {
-            g_printerr ("error: couldn't get profile settings: ds profile error: %s\n",
-                        qmi_wds_ds_profile_error_get_string (ds_profile_error));
         g_print ("%s\n", json_dumps(json_pack("{sbssss}",
              "success", 0,
              "error", "couldn't get profile settings: ds profile error",
              "message", qmi_wds_ds_profile_error_get_string (ds_profile_error)
               ),json_print_flag));
         } else {
-            g_printerr ("error: couldn't get profile settings: %s\n",
-                        error->message);
         g_print ("%s\n", json_dumps(json_pack("{sbssss}",
              "success", 0,
              "error", "couldn't get profile settings",
@@ -921,25 +861,21 @@ get_profile_settings_ready (QmiClientWds *client,
         g_snprintf(intstr,4,"%u", inner_ctx->i+1);
 
         if (qmi_message_wds_get_profile_settings_output_get_apn_name (output, &str, NULL)) {
-            g_print ("\t\tAPN: '%s'\n", str);
             json_object_update(json_object_get(inner_ctx->json_value,intstr), json_pack("{ss}",
                         "apn", VALIDATE_UNKNOWN (str)
             ));
         }
         if (qmi_message_wds_get_profile_settings_output_get_pdp_type (output, &pdp_type, NULL)) {
-            g_print ("\t\tPDP type: '%s'\n", qmi_wds_pdp_type_get_string (pdp_type));
             json_object_update(json_object_get(inner_ctx->json_value,intstr), json_pack("{ss}",
                         "pdp type", VALIDATE_UNKNOWN (qmi_wds_pdp_type_get_string (pdp_type))
             ));
         }
         if (qmi_message_wds_get_profile_settings_output_get_username (output, &str, NULL)) {
-            g_print ("\t\tUsername: '%s'\n", str);
             json_object_update(json_object_get(inner_ctx->json_value,intstr), json_pack("{ss}",
                         "username", VALIDATE_UNKNOWN (str)
             ));
         }
         if (qmi_message_wds_get_profile_settings_output_get_password (output, &str, NULL)) {
-            g_print ("\t\tPassword: '%s'\n", str);
             json_object_update(json_object_get(inner_ctx->json_value,intstr), json_pack("{ss}",
                         "password", VALIDATE_UNKNOWN (str)
             ));
@@ -948,7 +884,6 @@ get_profile_settings_ready (QmiClientWds *client,
             gchar *aux;
 
             aux = qmi_wds_authentication_build_string_from_mask (auth);
-            g_print ("\t\tAuth: '%s'\n", aux);
             json_object_update(json_object_get(inner_ctx->json_value,intstr), json_pack("{ss}",
                         "auth", VALIDATE_UNKNOWN (aux)
             ));
@@ -980,10 +915,7 @@ get_next_profile_settings (GetProfileListContext *inner_ctx)
     }
 
     profile = &g_array_index (inner_ctx->profile_list, QmiMessageWdsGetProfileListOutputProfileListProfile, inner_ctx->i);
-    g_print ("\t[%u] %s - %s\n",
-             profile->profile_index,
-             qmi_wds_profile_type_get_string (profile->profile_type),
-             profile->profile_name);
+    // load profile header info into JSON
     g_snprintf(intstr,4,"%u", inner_ctx->i+1);
     json_object_update(inner_ctx->json_value,json_pack("{s{ssss}}",
              intstr,
@@ -1017,8 +949,6 @@ get_profile_list_ready (QmiClientWds *client,
 
     output = qmi_client_wds_get_profile_list_finish (client, res, &error);
     if (!output) {
-        g_printerr ("error: operation failed: %s\n",
-                    error->message);
         g_print ("%s\n", json_dumps(json_pack("{sbssss}",
              "success", 0,
              "error", "operation failed",
@@ -1039,16 +969,12 @@ get_profile_list_ready (QmiClientWds *client,
                 output,
                 &ds_profile_error,
                 NULL)) {
-            g_printerr ("error: couldn't get profile list: ds profile error: %s\n",
-                        qmi_wds_ds_profile_error_get_string (ds_profile_error));
             g_print ("%s\n", json_dumps(json_pack("{sbssss}",
              "success", 0,
              "error", "couldn't get profile settings: ds profile error",
              "message", qmi_wds_ds_profile_error_get_string (ds_profile_error)
               ),json_print_flag));
         } else {
-            g_printerr ("error: couldn't get profile list: %s\n",
-                        error->message);
             g_print ("%s\n", json_dumps(json_pack("{sbssss}",
              "success", 0,
              "error", "couldn't get profile settings",
@@ -1065,7 +991,6 @@ get_profile_list_ready (QmiClientWds *client,
     qmi_message_wds_get_profile_list_output_get_profile_list (output, &profile_list, NULL);
 
     if (!profile_list || !profile_list->len) {
-        g_print ("Profile list empty\n");
         g_print ("%s\n", json_dumps(json_pack("{sbssss}",
              "success", 0,
              "error", "profile list empty"
@@ -1075,7 +1000,6 @@ get_profile_list_ready (QmiClientWds *client,
         return;
     }
 
-    g_print ("Profile list retrieved:\n");
 
     inner_ctx = g_slice_new (GetProfileListContext);
     inner_ctx->profile_list = g_array_ref (profile_list);
@@ -1100,7 +1024,6 @@ get_default_settings_ready (QmiClientWds *client,
 
     output = qmi_client_wds_get_default_settings_finish (client, res, &error);
     if (!output) {
-        g_printerr ("error: operation failed: %s\n", error->message);
         g_print ("%s\n", json_dumps(json_pack("{sbssss}",
              "success", 0,
              "error", "operation failed",
@@ -1121,16 +1044,12 @@ get_default_settings_ready (QmiClientWds *client,
                 output,
                 &ds_profile_error,
                 NULL)) {
-            g_printerr ("error: couldn't get default settings: ds default error: %s\n",
-                        qmi_wds_ds_profile_error_get_string (ds_profile_error));
             g_print ("%s\n", json_dumps(json_pack("{sbssss}",
              "success", 0,
              "error", "couldn't get default settings: ds profile error",
              "message", qmi_wds_ds_profile_error_get_string (ds_profile_error)
               ),json_print_flag));
         } else {
-            g_printerr ("error: couldn't get default settings: %s\n",
-                        error->message);
             g_print ("%s\n", json_dumps(json_pack("{sbssss}",
              "success", 0,
              "error", "couldn't get default settings",
@@ -1143,7 +1062,7 @@ get_default_settings_ready (QmiClientWds *client,
         return;
     }
 
-    g_print ("Default settings retrieved:\n");
+    //g_print ("Default settings retrieved:\n");
     json_output = json_pack("{sbsss{}}",
              "success", 1,
              "device", qmi_device_get_path_display (ctx->device),
@@ -1174,7 +1093,6 @@ get_default_settings_ready (QmiClientWds *client,
         gchar *aux;
 
         aux = qmi_wds_authentication_build_string_from_mask (auth);
-        g_print ("\tAuth: '%s'\n", aux);
         json_object_update(json_object_get(json_output,"default"), json_pack("{ss}",
                    "auth", VALIDATE_UNKNOWN (aux)
         ));
@@ -1197,7 +1115,6 @@ reset_ready (QmiClientWds *client,
 
     output = qmi_client_wds_reset_finish (client, res, &error);
     if (!output) {
-        g_printerr ("error: operation failed: %s\n", error->message);
         g_print ("%s\n", json_dumps(json_pack("{sbssss}",
              "success", 0,
              "error", "operation failed",
@@ -1209,7 +1126,6 @@ reset_ready (QmiClientWds *client,
     }
 
     if (!qmi_message_wds_reset_output_get_result (output, &error)) {
-        g_printerr ("error: couldn't reset the WDS service: %s\n", error->message);
         g_print ("%s\n", json_dumps(json_pack("{sbssss}",
              "success", 0,
              "error", "couldn't reset the wds service",
@@ -1221,8 +1137,6 @@ reset_ready (QmiClientWds *client,
         return;
     }
 
-    g_print ("[%s] Successfully performed WDS service reset\n",
-             qmi_device_get_path_display (ctx->device));
     g_print ("%s\n", json_dumps(json_pack("{sbss}",
              "success", 1,
              "message", "successfully performed wds service reset"
@@ -1313,8 +1227,6 @@ qmicli_wds_run (QmiDevice *device,
         packet_data_handle = strtoul (stop_network_str, NULL, 10);
         if (!packet_data_handle ||
             packet_data_handle > G_MAXUINT32) {
-            g_printerr ("error: invalid packet data handle given '%s'\n",
-                        stop_network_str);
             g_print ("%s\n", json_dumps(json_pack("{sbssss}",
                         "success", 0,
                         "error", "invalid packet data handle given",
@@ -1405,8 +1317,11 @@ qmicli_wds_run (QmiDevice *device,
         else if (g_str_equal (get_profile_list_str, "3gpp2"))
             qmi_message_wds_get_profile_list_input_set_profile_type (input, QMI_WDS_PROFILE_TYPE_3GPP2, NULL);
         else {
-            g_printerr ("error: invalid profile type '%s'. Expected '3gpp' or '3gpp2'.'\n",
-                        get_profile_list_str);
+            g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+                 "success", 0,
+                 "error", "invalid profile type, expected '3gpp' or '3gpp2'",
+                 "message", get_profile_list_str
+                 ),json_print_flag));
             shutdown (FALSE);
             return;
         }
@@ -1432,8 +1347,11 @@ qmicli_wds_run (QmiDevice *device,
         else if (g_str_equal (get_default_settings_str, "3gpp2"))
             qmi_message_wds_get_default_settings_input_set_profile_type (input, QMI_WDS_PROFILE_TYPE_3GPP2, NULL);
         else {
-            g_printerr ("error: invalid default type '%s'. Expected '3gpp' or '3gpp2'.'\n",
-                        get_default_settings_str);
+            g_print ("%s\n", json_dumps(json_pack("{sbssss}",
+                 "success", 0,
+                 "error", "invalid default type, expected '3gpp' or '3gpp2'",
+                 "message", get_default_settings_str
+                 ),json_print_flag));
             shutdown (FALSE);
             return;
         }
