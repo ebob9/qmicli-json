@@ -5,13 +5,15 @@ List of things left for later:
 
 Short Term: 
 
- * Finish conversion (qmicli.c 98%, qmicli-nas 100%, qmicli-uim 100%, qmicli-pbm 100%, rest currently 0%).
+ * Finish conversion (qmicli.c 98%, qmicli-nas 100%, qmicli-uim 100%, qmicli-pbm 100%, , qmicli-wds 100%, qmicli-dms 0%).
 
  * Fix/verify type casts (ex: G_GUINT16 to Jansson "i").
 
  * Verify that vars are free'd correctly when used and no exit.
 
  * Write function to convert comma-seperated lists to JSON array.
+
+ * Merge latest qmicli 1.9.x changes to qmicli
 
 Long Term:
 
